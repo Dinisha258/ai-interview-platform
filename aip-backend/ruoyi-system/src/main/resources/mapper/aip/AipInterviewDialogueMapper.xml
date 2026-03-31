@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.aip.mapper.AipInterviewDialogueMapper">
+    
+    <resultMap type="AipInterviewDialogue" id="AipInterviewDialogueResult">
+        <result property="id"    column="id"    />
+        <result property="sessionId"    column="session_id"    />
+        <result property="roundNum"    column="round_num"    />
+        <result property="isFollowUp"    column="is_follow_up"    />
+        <result property="aiContent"    column="ai_content"    />
+        <result property="userContent"    column="user_content"    />
+        <result property="audioUrl"    column="audio_url"    />
+        <result property="turnScore"    column="turn_score"    />
+        <result property="createTime"    column="create_time"    />
+    </resultMap>
+
+    <sql id="selectAipInterviewDialogueVo">
+        select id, session_id, round_num, is_follow_up, ai_content, user_content, audio_url, turn_score, create_time from aip_interview_dialogue
+    </sql>
+
+    <select id="selectAipInterviewDialogueList" parameterType="AipInterviewDialogue" resultMap="AipInterviewDialogueResult">
+        <include refid="selectAipInterviewDialogueVo"/>
+        <where>  
+            <if test="sessionId != null "> and session_id = #{sessionId}</if>
+            <if test="roundNum != null "> and round_num = #{roundNum}</if>
+            <if test="isFollowUp != null "> and is_follow_up = #{isFollowUp}</if>
+            <if test="aiContent != null  and aiContent != ''"> and ai_content = #{aiContent}</if>
+            <if test="userContent != null  and userContent != ''"> and user_content = #{userContent}</if>
+            <if test="audioUrl != null  and audioUrl != ''"> and audio_url = #{audioUrl}</if>
+            <if test="turnScore != null "> and turn_score = #{turnScore}</if>
+        </where>
+    </select>
+    
+    <select id="selectAipInterviewDialogueById" parameterType="Long" resultMap="AipInterviewDialogueResult">
+        <include refid="selectAipInterviewDialogueVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertAipInterviewDialogue" parameterType="AipInterviewDialogue" useGeneratedKeys="true" keyProperty="id">
+        insert into aip_interview_dialogue
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="sessionId != null">session_id,</if>
+            <if test="roundNum != null">round_num,</if>
+            <if test="isFollowUp != null">is_follow_up,</if>
+            <if test="aiContent != null">ai_content,</if>
+            <if test="userContent != null">user_content,</if>
+            <if test="audioUrl != null">audio_url,</if>
+            <if test="turnScore != null">turn_score,</if>
+            <if test="createTime != null">create_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="sessionId != null">#{sessionId},</if>
+            <if test="roundNum != null">#{roundNum},</if>
+            <if test="isFollowUp != null">#{isFollowUp},</if>
+            <if test="aiContent != null">#{aiContent},</if>
+            <if test="userContent != null">#{userContent},</if>
+            <if test="audioUrl != null">#{audioUrl},</if>
+            <if test="turnScore != null">#{turnScore},</if>
+            <if test="createTime != null">#{createTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateAipInterviewDialogue" parameterType="AipInterviewDialogue">
+        update aip_interview_dialogue
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="sessionId != null">session_id = #{sessionId},</if>
+            <if test="roundNum != null">round_num = #{roundNum},</if>
+            <if test="isFollowUp != null">is_follow_up = #{isFollowUp},</if>
+            <if test="aiContent != null">ai_content = #{aiContent},</if>
+            <if test="userContent != null">user_content = #{userContent},</if>
+            <if test="audioUrl != null">audio_url = #{audioUrl},</if>
+            <if test="turnScore != null">turn_score = #{turnScore},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteAipInterviewDialogueById" parameterType="Long">
+        delete from aip_interview_dialogue where id = #{id}
+    </delete>
+
+    <delete id="deleteAipInterviewDialogueByIds" parameterType="String">
+        delete from aip_interview_dialogue where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.aip.mapper.AipInterviewReportMapper">
+    
+    <resultMap type="AipInterviewReport" id="AipInterviewReportResult">
+        <result property="id"    column="id"    />
+        <result property="sessionId"    column="session_id"    />
+        <result property="radarDimensions"    column="radar_dimensions"    />
+        <result property="highlights"    column="highlights"    />
+        <result property="weaknesses"    column="weaknesses"    />
+        <result property="learningAdvice"    column="learning_advice"    />
+        <result property="createTime"    column="create_time"    />
+    </resultMap>
+
+    <sql id="selectAipInterviewReportVo">
+        select id, session_id, radar_dimensions, highlights, weaknesses, learning_advice, create_time from aip_interview_report
+    </sql>
+
+    <select id="selectAipInterviewReportList" parameterType="AipInterviewReport" resultMap="AipInterviewReportResult">
+        <include refid="selectAipInterviewReportVo"/>
+        <where>  
+            <if test="sessionId != null "> and session_id = #{sessionId}</if>
+            <if test="radarDimensions != null  and radarDimensions != ''"> and radar_dimensions = #{radarDimensions}</if>
+            <if test="highlights != null  and highlights != ''"> and highlights = #{highlights}</if>
+            <if test="weaknesses != null  and weaknesses != ''"> and weaknesses = #{weaknesses}</if>
+            <if test="learningAdvice != null  and learningAdvice != ''"> and learning_advice = #{learningAdvice}</if>
+        </where>
+    </select>
+    
+    <select id="selectAipInterviewReportById" parameterType="Long" resultMap="AipInterviewReportResult">
+        <include refid="selectAipInterviewReportVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertAipInterviewReport" parameterType="AipInterviewReport" useGeneratedKeys="true" keyProperty="id">
+        insert into aip_interview_report
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="sessionId != null">session_id,</if>
+            <if test="radarDimensions != null">radar_dimensions,</if>
+            <if test="highlights != null">highlights,</if>
+            <if test="weaknesses != null">weaknesses,</if>
+            <if test="learningAdvice != null">learning_advice,</if>
+            <if test="createTime != null">create_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="sessionId != null">#{sessionId},</if>
+            <if test="radarDimensions != null">#{radarDimensions},</if>
+            <if test="highlights != null">#{highlights},</if>
+            <if test="weaknesses != null">#{weaknesses},</if>
+            <if test="learningAdvice != null">#{learningAdvice},</if>
+            <if test="createTime != null">#{createTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateAipInterviewReport" parameterType="AipInterviewReport">
+        update aip_interview_report
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="sessionId != null">session_id = #{sessionId},</if>
+            <if test="radarDimensions != null">radar_dimensions = #{radarDimensions},</if>
+            <if test="highlights != null">highlights = #{highlights},</if>
+            <if test="weaknesses != null">weaknesses = #{weaknesses},</if>
+            <if test="learningAdvice != null">learning_advice = #{learningAdvice},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteAipInterviewReportById" parameterType="Long">
+        delete from aip_interview_report where id = #{id}
+    </delete>
+
+    <delete id="deleteAipInterviewReportByIds" parameterType="String">
+        delete from aip_interview_report where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

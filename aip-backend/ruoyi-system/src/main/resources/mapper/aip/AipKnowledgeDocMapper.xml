@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.aip.mapper.AipKnowledgeDocMapper">
+    
+    <resultMap type="AipKnowledgeDoc" id="AipKnowledgeDocResult">
+        <result property="id"    column="id"    />
+        <result property="positionId"    column="position_id"    />
+        <result property="docTitle"    column="doc_title"    />
+        <result property="fileName"    column="file_name"    />
+        <result property="fileUrl"    column="file_url"    />
+        <result property="fileSize"    column="file_size"    />
+        <result property="fileType"    column="file_type"    />
+        <result property="vectorStatus"    column="vector_status"    />
+        <result property="lastVectorTime"    column="last_vector_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectAipKnowledgeDocVo">
+        select id, position_id, doc_title, file_name, file_url, file_size, file_type, vector_status, last_vector_time, create_by, create_time, update_by, update_time, remark from aip_knowledge_doc
+    </sql>
+
+    <select id="selectAipKnowledgeDocList" parameterType="AipKnowledgeDoc" resultMap="AipKnowledgeDocResult">
+        <include refid="selectAipKnowledgeDocVo"/>
+        <where>  
+            <if test="positionId != null "> and position_id = #{positionId}</if>
+            <if test="docTitle != null  and docTitle != ''"> and doc_title = #{docTitle}</if>
+            <if test="fileName != null  and fileName != ''"> and file_name like concat('%', #{fileName}, '%')</if>
+            <if test="fileUrl != null  and fileUrl != ''"> and file_url = #{fileUrl}</if>
+            <if test="fileSize != null "> and file_size = #{fileSize}</if>
+            <if test="fileType != null  and fileType != ''"> and file_type = #{fileType}</if>
+            <if test="vectorStatus != null "> and vector_status = #{vectorStatus}</if>
+            <if test="lastVectorTime != null "> and last_vector_time = #{lastVectorTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectAipKnowledgeDocById" parameterType="Long" resultMap="AipKnowledgeDocResult">
+        <include refid="selectAipKnowledgeDocVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertAipKnowledgeDoc" parameterType="AipKnowledgeDoc" useGeneratedKeys="true" keyProperty="id">
+        insert into aip_knowledge_doc
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="positionId != null">position_id,</if>
+            <if test="docTitle != null and docTitle != ''">doc_title,</if>
+            <if test="fileName != null">file_name,</if>
+            <if test="fileUrl != null">file_url,</if>
+            <if test="fileSize != null">file_size,</if>
+            <if test="fileType != null">file_type,</if>
+            <if test="vectorStatus != null">vector_status,</if>
+            <if test="lastVectorTime != null">last_vector_time,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="positionId != null">#{positionId},</if>
+            <if test="docTitle != null and docTitle != ''">#{docTitle},</if>
+            <if test="fileName != null">#{fileName},</if>
+            <if test="fileUrl != null">#{fileUrl},</if>
+            <if test="fileSize != null">#{fileSize},</if>
+            <if test="fileType != null">#{fileType},</if>
+            <if test="vectorStatus != null">#{vectorStatus},</if>
+            <if test="lastVectorTime != null">#{lastVectorTime},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateAipKnowledgeDoc" parameterType="AipKnowledgeDoc">
+        update aip_knowledge_doc
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="positionId != null">position_id = #{positionId},</if>
+            <if test="docTitle != null and docTitle != ''">doc_title = #{docTitle},</if>
+            <if test="fileName != null">file_name = #{fileName},</if>
+            <if test="fileUrl != null">file_url = #{fileUrl},</if>
+            <if test="fileSize != null">file_size = #{fileSize},</if>
+            <if test="fileType != null">file_type = #{fileType},</if>
+            <if test="vectorStatus != null">vector_status = #{vectorStatus},</if>
+            <if test="lastVectorTime != null">last_vector_time = #{lastVectorTime},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteAipKnowledgeDocById" parameterType="Long">
+        delete from aip_knowledge_doc where id = #{id}
+    </delete>
+
+    <delete id="deleteAipKnowledgeDocByIds" parameterType="String">
+        delete from aip_knowledge_doc where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

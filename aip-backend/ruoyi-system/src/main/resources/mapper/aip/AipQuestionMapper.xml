@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.aip.mapper.AipQuestionMapper">
+    
+    <resultMap type="AipQuestion" id="AipQuestionResult">
+        <result property="id"    column="id"    />
+        <result property="positionId"    column="position_id"    />
+        <result property="type"    column="type"    />
+        <result property="content"    column="content"    />
+        <result property="answer"    column="answer"    />
+        <result property="difficulty"    column="difficulty"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectAipQuestionVo">
+        select id, position_id, type, content, answer, difficulty, create_by, create_time, update_by, update_time, remark from aip_question
+    </sql>
+
+    <select id="selectAipQuestionList" parameterType="AipQuestion" resultMap="AipQuestionResult">
+        <include refid="selectAipQuestionVo"/>
+        <where>  
+            <if test="positionId != null "> and position_id = #{positionId}</if>
+            <if test="type != null  and type != ''"> and type = #{type}</if>
+            <if test="content != null  and content != ''"> and content = #{content}</if>
+            <if test="answer != null  and answer != ''"> and answer = #{answer}</if>
+            <if test="difficulty != null "> and difficulty = #{difficulty}</if>
+        </where>
+    </select>
+    
+    <select id="selectAipQuestionById" parameterType="Long" resultMap="AipQuestionResult">
+        <include refid="selectAipQuestionVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertAipQuestion" parameterType="AipQuestion" useGeneratedKeys="true" keyProperty="id">
+        insert into aip_question
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="positionId != null">position_id,</if>
+            <if test="type != null">type,</if>
+            <if test="content != null and content != ''">content,</if>
+            <if test="answer != null">answer,</if>
+            <if test="difficulty != null">difficulty,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="positionId != null">#{positionId},</if>
+            <if test="type != null">#{type},</if>
+            <if test="content != null and content != ''">#{content},</if>
+            <if test="answer != null">#{answer},</if>
+            <if test="difficulty != null">#{difficulty},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateAipQuestion" parameterType="AipQuestion">
+        update aip_question
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="positionId != null">position_id = #{positionId},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="content != null and content != ''">content = #{content},</if>
+            <if test="answer != null">answer = #{answer},</if>
+            <if test="difficulty != null">difficulty = #{difficulty},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteAipQuestionById" parameterType="Long">
+        delete from aip_question where id = #{id}
+    </delete>
+
+    <delete id="deleteAipQuestionByIds" parameterType="String">
+        delete from aip_question where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
