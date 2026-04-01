@@ -1,6 +1,9 @@
 package com.ruoyi.aip.domain;
 
 import java.math.BigDecimal;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.ruoyi.common.annotation.Excel;
@@ -8,10 +11,12 @@ import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
  * 问答对话明细对象 aip_interview_dialogue
- * 
+ *
  * @author ruoyi
  * @date 2026-03-31
  */
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class AipInterviewDialogue extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
@@ -25,7 +30,7 @@ public class AipInterviewDialogue extends BaseEntity
 
     /** 轮次序号 */
     @Excel(name = "轮次序号")
-    private Long roundNum;
+    private Integer roundNum;
 
     /** 是否为AI发起的追问（0否 1是） */
     @Excel(name = "是否为AI发起的追问", readConverterExp = "0=否,1=是")
@@ -46,86 +51,6 @@ public class AipInterviewDialogue extends BaseEntity
     /** 单点打分 */
     @Excel(name = "单点打分")
     private BigDecimal turnScore;
-
-    public void setId(Long id) 
-    {
-        this.id = id;
-    }
-
-    public Long getId() 
-    {
-        return id;
-    }
-
-    public void setSessionId(Long sessionId) 
-    {
-        this.sessionId = sessionId;
-    }
-
-    public Long getSessionId() 
-    {
-        return sessionId;
-    }
-
-    public void setRoundNum(Long roundNum) 
-    {
-        this.roundNum = roundNum;
-    }
-
-    public Long getRoundNum() 
-    {
-        return roundNum;
-    }
-
-    public void setIsFollowUp(Integer isFollowUp) 
-    {
-        this.isFollowUp = isFollowUp;
-    }
-
-    public Integer getIsFollowUp() 
-    {
-        return isFollowUp;
-    }
-
-    public void setAiContent(String aiContent) 
-    {
-        this.aiContent = aiContent;
-    }
-
-    public String getAiContent() 
-    {
-        return aiContent;
-    }
-
-    public void setUserContent(String userContent) 
-    {
-        this.userContent = userContent;
-    }
-
-    public String getUserContent() 
-    {
-        return userContent;
-    }
-
-    public void setAudioUrl(String audioUrl) 
-    {
-        this.audioUrl = audioUrl;
-    }
-
-    public String getAudioUrl() 
-    {
-        return audioUrl;
-    }
-
-    public void setTurnScore(BigDecimal turnScore) 
-    {
-        this.turnScore = turnScore;
-    }
-
-    public BigDecimal getTurnScore() 
-    {
-        return turnScore;
-    }
 
     @Override
     public String toString() {
