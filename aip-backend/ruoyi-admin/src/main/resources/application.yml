@@ -134,3 +134,10 @@ xss:
   excludes: /system/notice
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
+
+# 自定义 MinIO 配置
+minio:
+  endpoint: http://frp-fan.com:15064 # MinIO API 地址
+  accessKey: minioadmin           # 账号
+  secretKey: minioadmin           # 密码
+  bucketName: aip-files           # 桶名称
