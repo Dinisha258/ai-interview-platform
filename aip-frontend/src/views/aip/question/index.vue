@@ -97,7 +97,7 @@
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
       v-show="total>0"
       :total="total"
@@ -115,7 +115,7 @@
         <el-form-item label="题目内容">
           <editor v-model="form.content" :min-height="192"/>
         </el-form-item>
-        <el-form-item label="标准参考答案及踩分点" prop="answer">
+        <el-form-item label="答案及踩分点" prop="answer">
           <el-input v-model="form.answer" type="textarea" placeholder="请输入内容" />
         </el-form-item>
         <el-form-item label="难度系数" prop="difficulty">

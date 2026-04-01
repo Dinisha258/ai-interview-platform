@@ -23,6 +23,7 @@ export function addPosition(data) {
     url: '/aip/manage/position',
     method: 'post',
     data: data
+
   })
 }
 

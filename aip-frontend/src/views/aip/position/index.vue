@@ -65,7 +65,16 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="岗位主键ID" align="center" prop="id" />
       <el-table-column label="岗位名称" align="center" prop="name" />
-      <el-table-column label="状态" align="center" prop="status" />
+      <el-table-column label="状态" align="center" prop="status">
+        <template slot-scope="scope">
+          <el-switch
+            v-model="scope.row.status"
+            :active-value="1"
+            :inactive-value="0"
+            @change="handleStatusChange(scope.row)"
+          ></el-switch>
+        </template>
+      </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
@@ -86,7 +95,7 @@
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
       v-show="total>0"
       :total="total"
@@ -162,6 +171,18 @@ export default {
     this.getList()
   },
   methods: {
+    /** 状态修改确认 */
+    handleStatusChange(row) {
+      let text = row.status === 1 ? "启用" : "停用";
+      this.$modal.confirm('确认要"' + text + '""' + row.name + '"岗位吗？').then(function() {
+        return updatePosition(row);
+      }).then(() => {
+        this.$modal.msgSuccess(text + "成功");
+      }).catch(function() {
+        // 如果取消或报错，将开关状态改回原样
+        row.status = row.status === 1 ? 0 : 1;
+      });
+    },
     /** 查询岗位分类列表 */
     getList() {
       this.loading = true
