@@ -28,7 +28,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
  * @date 2026-03-31
  */
 @RestController
-@RequestMapping("/aip/question")
+@RequestMapping("/aip/manage/question")
 public class AipQuestionController extends BaseController
 {
     @Autowired

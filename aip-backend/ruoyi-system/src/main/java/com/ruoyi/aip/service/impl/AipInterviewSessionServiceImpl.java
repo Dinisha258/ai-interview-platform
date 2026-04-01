@@ -103,7 +103,7 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
     @Override
     public Long startInterview(Long userId, StartInterviewDTO startDTO)
     {
-        // 1. 并发检查：查询该用户是否有状态为“进行中(0)”的会话
+        // 1. 并发检查：查询该用户是否有状态为进行中(0)的会话
         AipInterviewSession activeSession = aipInterviewSessionMapper.selectActiveSessionByUserId(userId);
 
         // 如果有未完成的会话，直接返回其ID，前端拿到后可以恢复进度

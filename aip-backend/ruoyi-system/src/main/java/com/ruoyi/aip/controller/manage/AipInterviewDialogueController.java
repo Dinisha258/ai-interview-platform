@@ -28,7 +28,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
  * @date 2026-03-31
  */
 @RestController
-@RequestMapping("/aip/dialogue")
+@RequestMapping("/aip/manage/dialogue")
 public class AipInterviewDialogueController extends BaseController
 {
     @Autowired

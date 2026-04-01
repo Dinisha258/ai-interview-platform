@@ -28,7 +28,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
  * @date 2026-03-31
  */
 @RestController
-@RequestMapping("/aip/doc")
+@RequestMapping("/aip/manage/doc")
 public class AipKnowledgeDocController extends BaseController
 {
     @Autowired

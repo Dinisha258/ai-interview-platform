@@ -28,7 +28,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
  * @date 2026-03-31
  */
 @RestController
-@RequestMapping("/aip/session")
+@RequestMapping("/aip/manage/session")
 public class AipInterviewSessionController extends BaseController
 {
     @Autowired

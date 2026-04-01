@@ -28,7 +28,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
  * @date 2026-03-31
  */
 @RestController
-@RequestMapping("/aip/position")
+@RequestMapping("/aip/manage/position")
 public class AipPositionController extends BaseController
 {
     @Autowired
