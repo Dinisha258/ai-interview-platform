@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询问答对话明细列表
 export function listDialogue(query) {
   return request({
-    url: '/aip/dialogue/list',
+    url: '/aip/manage/dialogue/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listDialogue(query) {
 // 查询问答对话明细详细
 export function getDialogue(id) {
   return request({
-    url: '/aip/dialogue/' + id,
+    url: '/aip/manage/dialogue/' + id,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getDialogue(id) {
 // 新增问答对话明细
 export function addDialogue(data) {
   return request({
-    url: '/aip/dialogue',
+    url: '/aip/manage/dialogue',
     method: 'post',
     data: data
   })
@@ -29,7 +29,7 @@ export function addDialogue(data) {
 // 修改问答对话明细
 export function updateDialogue(data) {
   return request({
-    url: '/aip/dialogue',
+    url: '/aip/manage/dialogue',
     method: 'put',
     data: data
   })
@@ -38,7 +38,7 @@ export function updateDialogue(data) {
 // 删除问答对话明细
 export function delDialogue(id) {
   return request({
-    url: '/aip/dialogue/' + id,
+    url: '/aip/manage/dialogue/' + id,
     method: 'delete'
   })
 }

@@ -36,11 +36,18 @@
         <spring-security.version>5.7.14</spring-security.version>
         <spring-framework.version>5.3.39</spring-framework.version>
         <lombok.version>1.18.36</lombok.version>
+        <okhttp3.version>4.10.0</okhttp3.version>
     </properties>
 
     <!-- 依赖声明 -->
     <dependencyManagement>
         <dependencies>
+
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>4.10.0</version>
+            </dependency>
 
             <!-- 覆盖SpringFramework的依赖配置-->
             <dependency>

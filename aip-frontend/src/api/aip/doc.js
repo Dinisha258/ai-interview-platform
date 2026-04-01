@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询知识库文档列表
 export function listDoc(query) {
   return request({
-    url: '/aip/doc/list',
+    url: '/aip/manage/doc/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listDoc(query) {
 // 查询知识库文档详细
 export function getDoc(id) {
   return request({
-    url: '/aip/doc/' + id,
+    url: '/aip/manage/doc/' + id,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getDoc(id) {
 // 新增知识库文档
 export function addDoc(data) {
   return request({
-    url: '/aip/doc',
+    url: '/aip/manage/doc',
     method: 'post',
     data: data
   })
@@ -29,7 +29,7 @@ export function addDoc(data) {
 // 修改知识库文档
 export function updateDoc(data) {
   return request({
-    url: '/aip/doc',
+    url: '/aip/manage/doc',
     method: 'put',
     data: data
   })
@@ -38,7 +38,7 @@ export function updateDoc(data) {
 // 删除知识库文档
 export function delDoc(id) {
   return request({
-    url: '/aip/doc/' + id,
+    url: '/aip/manage/doc/' + id,
     method: 'delete'
   })
 }

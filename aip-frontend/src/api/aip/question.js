@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询面试题目库列表
 export function listQuestion(query) {
   return request({
-    url: '/aip/question/list',
+    url: '/aip/manage/question/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listQuestion(query) {
 // 查询面试题目库详细
 export function getQuestion(id) {
   return request({
-    url: '/aip/question/' + id,
+    url: '/aip/manage/question/' + id,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getQuestion(id) {
 // 新增面试题目库
 export function addQuestion(data) {
   return request({
-    url: '/aip/question',
+    url: '/aip/manage/question',
     method: 'post',
     data: data
   })
@@ -29,7 +29,7 @@ export function addQuestion(data) {
 // 修改面试题目库
 export function updateQuestion(data) {
   return request({
-    url: '/aip/question',
+    url: '/aip/manage/question',
     method: 'put',
     data: data
   })
@@ -38,7 +38,7 @@ export function updateQuestion(data) {
 // 删除面试题目库
 export function delQuestion(id) {
   return request({
-    url: '/aip/question/' + id,
+    url: '/aip/manage/question/' + id,
     method: 'delete'
   })
 }

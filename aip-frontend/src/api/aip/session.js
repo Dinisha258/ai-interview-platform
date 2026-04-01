@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询面试会话流水列表
 export function listSession(query) {
   return request({
-    url: '/aip/session/list',
+    url: '/aip/manage/session/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listSession(query) {
 // 查询面试会话流水详细
 export function getSession(id) {
   return request({
-    url: '/aip/session/' + id,
+    url: '/aip/manage/session/' + id,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getSession(id) {
 // 新增面试会话流水
 export function addSession(data) {
   return request({
-    url: '/aip/session',
+    url: '/aip/manage/session',
     method: 'post',
     data: data
   })
@@ -29,7 +29,7 @@ export function addSession(data) {
 // 修改面试会话流水
 export function updateSession(data) {
   return request({
-    url: '/aip/session',
+    url: '/aip/manage/session',
     method: 'put',
     data: data
   })
@@ -38,7 +38,7 @@ export function updateSession(data) {
 // 删除面试会话流水
 export function delSession(id) {
   return request({
-    url: '/aip/session/' + id,
+    url: '/aip/manage/session/' + id,
     method: 'delete'
   })
 }

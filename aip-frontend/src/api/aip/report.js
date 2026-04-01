@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询综合评估报告列表
 export function listReport(query) {
   return request({
-    url: '/aip/report/list',
+    url: '/aip/manage/report/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listReport(query) {
 // 查询综合评估报告详细
 export function getReport(id) {
   return request({
-    url: '/aip/report/' + id,
+    url: '/aip/manage/report/' + id,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getReport(id) {
 // 新增综合评估报告
 export function addReport(data) {
   return request({
-    url: '/aip/report',
+    url: '/aip/manage/report',
     method: 'post',
     data: data
   })
@@ -29,7 +29,7 @@ export function addReport(data) {
 // 修改综合评估报告
 export function updateReport(data) {
   return request({
-    url: '/aip/report',
+    url: '/aip/manage/report',
     method: 'put',
     data: data
   })
@@ -38,7 +38,7 @@ export function updateReport(data) {
 // 删除综合评估报告
 export function delReport(id) {
   return request({
-    url: '/aip/report/' + id,
+    url: '/aip/manage/report/' + id,
     method: 'delete'
   })
 }
