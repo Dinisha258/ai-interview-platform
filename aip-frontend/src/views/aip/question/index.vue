@@ -1,13 +1,22 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="关联的岗位ID" prop="positionId">
-        <el-input
+      <!-- 修改：岗位ID查询条件改为下拉选择 -->
+      <el-form-item label="关联的岗位" prop="positionId">
+        <el-select
           v-model="queryParams.positionId"
-          placeholder="请输入关联的岗位ID"
+          placeholder="请选择岗位"
           clearable
+          filterable
           @keyup.enter.native="handleQuery"
-        />
+        >
+          <el-option
+            v-for="item in postOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="难度系数" prop="difficulty">
         <el-input
@@ -109,8 +118,22 @@
     <!-- 添加或修改面试题目库对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="关联的岗位ID" prop="positionId">
-          <el-input v-model="form.positionId" placeholder="请输入关联的岗位ID" />
+        <!-- 修改：岗位ID改为下拉选择 -->
+        <el-form-item label="关联的岗位" prop="positionId">
+          <el-select
+            v-model="form.positionId"
+            placeholder="请选择岗位"
+            clearable
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="item in postOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="题目内容">
           <editor v-model="form.content" :min-height="192"/>
@@ -135,6 +158,8 @@
 
 <script>
 import { listQuestion, getQuestion, delQuestion, addQuestion, updateQuestion } from "@/api/aip/question"
+// 导入岗位API
+import { listPost } from "@/api/system/post"
 
 export default {
   name: "Question",
@@ -158,6 +183,8 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      // 岗位下拉选项列表
+      postOptions: [],
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -183,6 +210,7 @@ export default {
   },
   created() {
     this.getList()
+    this.getPostList() // 加载岗位列表
   },
   methods: {
     /** 查询面试题目库列表 */
@@ -192,6 +220,17 @@ export default {
         this.questionList = response.rows
         this.total = response.total
         this.loading = false
+      })
+    },
+    /** 获取岗位下拉列表 */
+    getPostList() {
+      listPost({ pageSize: 100, status: '0' }).then(response => {
+        this.postOptions = response.rows.map(item => ({
+          value: item.postId,
+          label: item.postName
+        }))
+      }).catch(() => {
+        this.postOptions = []
       })
     },
     // 取消按钮
@@ -229,7 +268,7 @@ export default {
     // 多选框选中数据
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
+      this.single = selection.length !== 1
       this.multiple = !selection.length
     },
     /** 新增按钮操作 */
