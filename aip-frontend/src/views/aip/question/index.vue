@@ -168,7 +168,7 @@
 
 <script>
 import { listQuestion, getQuestion, delQuestion, addQuestion, updateQuestion } from "@/api/aip/question"
-import { listPost } from "@/api/system/post"
+import { listPosition } from "@/api/system/post"
 
 export default {
   name: "Question",
@@ -218,7 +218,7 @@ export default {
       })
     },
     getPostList() {
-      listPost({ pageSize: 100, status: '0' }).then(response => {
+      listPosition({ pageSize: 100, status: '0' }).then(response => {
         this.postOptions = response.rows.map(item => ({
           value: item.postId,
           label: item.postName
