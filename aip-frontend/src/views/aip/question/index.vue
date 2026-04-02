@@ -158,8 +158,7 @@
 
 <script>
 import { listQuestion, getQuestion, delQuestion, addQuestion, updateQuestion } from "@/api/aip/question"
-// 导入岗位API
-import { listPost } from "@/api/system/post"
+import { listPosition } from "@/api/aip/position";
 
 export default {
   name: "Question",
@@ -210,7 +209,7 @@ export default {
   },
   created() {
     this.getList()
-    this.getPostList() // 加载岗位列表
+    this.getPostionList() // 加载岗位列表
   },
   methods: {
     /** 查询面试题目库列表 */
@@ -223,11 +222,12 @@ export default {
       })
     },
     /** 获取岗位下拉列表 */
-    getPostList() {
-      listPost({ pageSize: 100, status: '0' }).then(response => {
+    getPostionList() {
+      // 代表只查询状态为“启用”的岗位
+      listPosition({ pageSize: 100, status: 1 }).then(response => {
         this.postOptions = response.rows.map(item => ({
-          value: item.postId,
-          label: item.postName
+          value: item.id,
+          label: item.name
         }))
       }).catch(() => {
         this.postOptions = []
