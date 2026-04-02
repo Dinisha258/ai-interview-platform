@@ -1,5 +1,7 @@
 import os
 import json
+
+import httpx
 from openai import AsyncOpenAI
 from app.prompts import INTERVIEWER_SYSTEM_PROMPT
 from app.schemas import AgentChatReq, AgentChatResp
@@ -7,7 +9,9 @@ from app.schemas import AgentChatReq, AgentChatResp
 # 初始化 DeepSeek 异步客户端
 client = AsyncOpenAI(
     api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url="[https://api.deepseek.com](https://api.deepseek.com)"
+    base_url="https://api.deepseek.com",
+    # 如果开了代理软件（如 Clash），把下面的注释打开，确认代理端口是 7890
+    http_client=httpx.AsyncClient(proxy="http://127.0.0.1:7890")
 )
 
 LEVEL_MAP = {1: "实习生", 2: "初级", 3: "中级", 4: "高级"}
