@@ -1,7 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <!-- 修改：岗位ID查询条件改为下拉选择 -->
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px" class="inline-form">
       <el-form-item label="关联的岗位" prop="positionId">
         <el-select
           v-model="queryParams.positionId"
@@ -9,6 +8,7 @@
           clearable
           filterable
           @keyup.enter.native="handleQuery"
+          style="width: 180px"
         >
           <el-option
             v-for="item in postOptions"
@@ -19,12 +19,18 @@
         </el-select>
       </el-form-item>
       <el-form-item label="难度系数" prop="difficulty">
-        <el-input
+        <el-select
           v-model="queryParams.difficulty"
-          placeholder="请输入难度系数"
+          placeholder="请选择难度"
           clearable
           @keyup.enter.native="handleQuery"
-        />
+          style="width: 150px"
+        >
+          <el-option label="1" :value="1" />
+          <el-option label="2" :value="2" />
+          <el-option label="3" :value="3" />
+          <el-option label="4" :value="4" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -32,7 +38,8 @@
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <!-- 添加 button-row 类以增加上边距 -->
+    <el-row :gutter="10" class="mb8 button-row">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -84,7 +91,7 @@
       <el-table-column label="关联的岗位ID" align="center" prop="positionId" />
       <el-table-column label="题目分类" align="center" prop="type" />
       <el-table-column label="题目内容" align="center" prop="content" />
-      <el-table-column label="标准参考答案及踩分点" align="center" prop="answer" />
+      <el-table-column label="参考答案及踩分点" align="center" prop="answer" />
       <el-table-column label="难度系数" align="center" prop="difficulty" />
       <el-table-column label="备注" align="center" prop="remark" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
@@ -115,10 +122,8 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改面试题目库对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <!-- 修改：岗位ID改为下拉选择 -->
         <el-form-item label="关联的岗位" prop="positionId">
           <el-select
             v-model="form.positionId"
@@ -135,14 +140,19 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="题目内容">
+        <el-form-item label="题目内容" prop="content">
           <editor v-model="form.content" :min-height="192"/>
         </el-form-item>
         <el-form-item label="答案及踩分点" prop="answer">
           <el-input v-model="form.answer" type="textarea" placeholder="请输入内容" />
         </el-form-item>
         <el-form-item label="难度系数" prop="difficulty">
-          <el-input v-model="form.difficulty" placeholder="请输入难度系数" />
+          <el-select v-model="form.difficulty" placeholder="请选择难度" clearable style="width: 100%">
+            <el-option label="1" :value="1" />
+            <el-option label="2" :value="2" />
+            <el-option label="3" :value="3" />
+            <el-option label="4" :value="4" />
+          </el-select>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
@@ -158,34 +168,22 @@
 
 <script>
 import { listQuestion, getQuestion, delQuestion, addQuestion, updateQuestion } from "@/api/aip/question"
-// 导入岗位API
 import { listPost } from "@/api/system/post"
 
 export default {
   name: "Question",
   data() {
     return {
-      // 遮罩层
       loading: true,
-      // 选中数组
       ids: [],
-      // 非单个禁用
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      // 总条数
       total: 0,
-      // 面试题目库表格数据
       questionList: [],
-      // 弹出层标题
       title: "",
-      // 是否显示弹出层
       open: false,
-      // 岗位下拉选项列表
       postOptions: [],
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -195,25 +193,22 @@ export default {
         answer: null,
         difficulty: null,
       },
-      // 表单参数
       form: {},
-      // 表单校验
       rules: {
         content: [
           { required: true, message: "题目内容不能为空", trigger: "blur" }
         ],
         difficulty: [
-          { required: true, message: "难度系数不能为空", trigger: "blur" }
+          { required: true, message: "请选择难度系数", trigger: "change" }
         ],
       }
     }
   },
   created() {
     this.getList()
-    this.getPostList() // 加载岗位列表
+    this.getPostList()
   },
   methods: {
-    /** 查询面试题目库列表 */
     getList() {
       this.loading = true
       listQuestion(this.queryParams).then(response => {
@@ -222,7 +217,6 @@ export default {
         this.loading = false
       })
     },
-    /** 获取岗位下拉列表 */
     getPostList() {
       listPost({ pageSize: 100, status: '0' }).then(response => {
         this.postOptions = response.rows.map(item => ({
@@ -233,12 +227,10 @@ export default {
         this.postOptions = []
       })
     },
-    // 取消按钮
     cancel() {
       this.open = false
       this.reset()
     },
-    // 表单重置
     reset() {
       this.form = {
         id: null,
@@ -255,29 +247,24 @@ export default {
       }
       this.resetForm("form")
     },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1
       this.getList()
     },
-    /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm")
       this.handleQuery()
     },
-    // 多选框选中数据
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id)
       this.single = selection.length !== 1
       this.multiple = !selection.length
     },
-    /** 新增按钮操作 */
     handleAdd() {
       this.reset()
       this.open = true
       this.title = "添加面试题目库"
     },
-    /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset()
       const id = row.id || this.ids
@@ -287,7 +274,6 @@ export default {
         this.title = "修改面试题目库"
       })
     },
-    /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
@@ -307,17 +293,15 @@ export default {
         }
       })
     },
-    /** 删除按钮操作 */
     handleDelete(row) {
       const ids = row.id || this.ids
-      this.$modal.confirm('是否确认删除面试题目库编号为"' + ids + '"的数据项？').then(function() {
+      this.$modal.confirm('是否确认删除面试题目库编号为"' + ids + '"的数据项？').then(() => {
         return delQuestion(ids)
       }).then(() => {
         this.getList()
         this.$modal.msgSuccess("删除成功")
       }).catch(() => {})
     },
-    /** 导出按钮操作 */
     handleExport() {
       this.download('aip/question/export', {
         ...this.queryParams
@@ -326,3 +310,23 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.inline-form .el-form-item {
+  margin-right: 15px;
+  margin-bottom: 0;
+}
+/* 确保标签文字不换行 */
+.inline-form .el-form-item__label {
+  white-space: nowrap;
+}
+/* 增加按钮行与查询表单之间的纵向距离 */
+.button-row {
+  margin-top: 15px;
+}
+</style>
