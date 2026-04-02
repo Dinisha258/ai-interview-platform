@@ -1,13 +1,37 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="关联的面试场次ID" prop="sessionId">
-        <el-input
-          v-model="queryParams.sessionId"
-          placeholder="请输入关联的面试场次ID"
+    <!-- 修改：添加自定义样式确保一行显示 -->
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px" class="inline-form">
+      <el-form-item label="关联的岗位" prop="positionId">
+        <el-select
+          v-model="queryParams.positionId"
+          placeholder="请选择岗位"
+          clearable
+          filterable
+          @keyup.enter.native="handleQuery"
+          style="width: 180px"
+        >
+          <el-option
+            v-for="item in postOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="难度系数" prop="difficulty">
+        <el-select
+          v-model="queryParams.difficulty"
+          placeholder="请选择难度"
           clearable
           @keyup.enter.native="handleQuery"
-        />
+          style="width: 100px"
+        >
+          <el-option label="1" :value="1" />
+          <el-option label="2" :value="2" />
+          <el-option label="3" :value="3" />
+          <el-option label="4" :value="4" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -23,7 +47,7 @@
           icon="el-icon-plus"
           size="mini"
           @click="handleAdd"
-          v-hasPermi="['aip:report:add']"
+          v-hasPermi="['aip:question:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -34,7 +58,7 @@
           size="mini"
           :disabled="single"
           @click="handleUpdate"
-          v-hasPermi="['aip:report:edit']"
+          v-hasPermi="['aip:question:edit']"
         >修改</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -45,7 +69,7 @@
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
-          v-hasPermi="['aip:report:remove']"
+          v-hasPermi="['aip:question:remove']"
         >删除</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -55,20 +79,21 @@
           icon="el-icon-download"
           size="mini"
           @click="handleExport"
-          v-hasPermi="['aip:report:export']"
+          v-hasPermi="['aip:question:export']"
         >导出</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="reportList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="questionList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="报告主键ID" align="center" prop="id" />
-      <el-table-column label="关联的面试场次ID" align="center" prop="sessionId" />
-      <el-table-column label="雷达图数据(JSON)" align="center" prop="radarDimensions" />
-      <el-table-column label="AI总结的面试亮点" align="center" prop="highlights" />
-      <el-table-column label="AI总结的核心薄弱点" align="center" prop="weaknesses" />
-      <el-table-column label="针对性学习和练习建议" align="center" prop="learningAdvice" />
+      <el-table-column label="题目主键ID" align="center" prop="id" />
+      <el-table-column label="关联的岗位ID" align="center" prop="positionId" />
+      <el-table-column label="题目分类" align="center" prop="type" />
+      <el-table-column label="题目内容" align="center" prop="content" />
+      <el-table-column label="标准参考答案及踩分点" align="center" prop="answer" />
+      <el-table-column label="难度系数" align="center" prop="difficulty" />
+      <el-table-column label="备注" align="center" prop="remark" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
@@ -76,19 +101,19 @@
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
-            v-hasPermi="['aip:report:edit']"
+            v-hasPermi="['aip:question:edit']"
           >修改</el-button>
           <el-button
             size="mini"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
-            v-hasPermi="['aip:report:remove']"
+            v-hasPermi="['aip:question:remove']"
           >删除</el-button>
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
       v-show="total>0"
       :total="total"
@@ -97,20 +122,41 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改综合评估报告对话框 -->
+    <!-- 添加或修改面试题目库对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="关联的面试场次ID" prop="sessionId">
-          <el-input v-model="form.sessionId" placeholder="请输入关联的面试场次ID" />
+        <el-form-item label="关联的岗位" prop="positionId">
+          <el-select
+            v-model="form.positionId"
+            placeholder="请选择岗位"
+            clearable
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="item in postOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
         </el-form-item>
-        <el-form-item label="AI总结的面试亮点" prop="highlights">
-          <el-input v-model="form.highlights" type="textarea" placeholder="请输入内容" />
+        <el-form-item label="题目内容" prop="content">
+          <editor v-model="form.content" :min-height="192"/>
         </el-form-item>
-        <el-form-item label="AI总结的核心薄弱点" prop="weaknesses">
-          <el-input v-model="form.weaknesses" type="textarea" placeholder="请输入内容" />
+        <el-form-item label="答案及踩分点" prop="answer">
+          <el-input v-model="form.answer" type="textarea" placeholder="请输入内容" />
         </el-form-item>
-        <el-form-item label="针对性学习和练习建议" prop="learningAdvice">
-          <el-input v-model="form.learningAdvice" type="textarea" placeholder="请输入内容" />
+        <el-form-item label="难度系数" prop="difficulty">
+          <el-select v-model="form.difficulty" placeholder="请选择难度" clearable style="width: 100%">
+            <el-option label="1" :value="1" />
+            <el-option label="2" :value="2" />
+            <el-option label="3" :value="3" />
+            <el-option label="4" :value="4" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注" prop="remark">
+          <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -122,122 +168,124 @@
 </template>
 
 <script>
-import { listReport, getReport, delReport, addReport, updateReport } from "@/api/aip/report"
+import { listQuestion, getQuestion, delQuestion, addQuestion, updateQuestion } from "@/api/aip/question"
+import { listPost } from "@/api/system/post"
 
 export default {
-  name: "Report",
+  name: "Question",
   data() {
     return {
-      // 遮罩层
       loading: true,
-      // 选中数组
       ids: [],
-      // 非单个禁用
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      // 总条数
       total: 0,
-      // 综合评估报告表格数据
-      reportList: [],
-      // 弹出层标题
+      questionList: [],
       title: "",
-      // 是否显示弹出层
       open: false,
-      // 查询参数
+      postOptions: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        sessionId: null,
-        radarDimensions: null,
-        highlights: null,
-        weaknesses: null,
-        learningAdvice: null,
+        positionId: null,
+        type: null,
+        content: null,
+        answer: null,
+        difficulty: null,
       },
-      // 表单参数
       form: {},
-      // 表单校验
       rules: {
+        content: [
+          { required: true, message: "题目内容不能为空", trigger: "blur" }
+        ],
+        difficulty: [
+          { required: true, message: "请选择难度系数", trigger: "change" }
+        ],
       }
     }
   },
   created() {
     this.getList()
+    this.getPostList()
   },
   methods: {
-    /** 查询综合评估报告列表 */
     getList() {
       this.loading = true
-      listReport(this.queryParams).then(response => {
-        this.reportList = response.rows
+      listQuestion(this.queryParams).then(response => {
+        this.questionList = response.rows
         this.total = response.total
         this.loading = false
       })
     },
-    // 取消按钮
+    getPostList() {
+      listPost({ pageSize: 100, status: '0' }).then(response => {
+        this.postOptions = response.rows.map(item => ({
+          value: item.postId,
+          label: item.postName
+        }))
+      }).catch(() => {
+        this.postOptions = []
+      })
+    },
     cancel() {
       this.open = false
       this.reset()
     },
-    // 表单重置
     reset() {
       this.form = {
         id: null,
-        sessionId: null,
-        radarDimensions: null,
-        highlights: null,
-        weaknesses: null,
-        learningAdvice: null,
-        createTime: null
+        positionId: null,
+        type: null,
+        content: null,
+        answer: null,
+        difficulty: null,
+        createBy: null,
+        createTime: null,
+        updateBy: null,
+        updateTime: null,
+        remark: null
       }
       this.resetForm("form")
     },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1
       this.getList()
     },
-    /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm")
       this.handleQuery()
     },
-    // 多选框选中数据
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
+      this.single = selection.length !== 1
       this.multiple = !selection.length
     },
-    /** 新增按钮操作 */
     handleAdd() {
       this.reset()
       this.open = true
-      this.title = "添加综合评估报告"
+      this.title = "添加面试题目库"
     },
-    /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset()
       const id = row.id || this.ids
-      getReport(id).then(response => {
+      getQuestion(id).then(response => {
         this.form = response.data
         this.open = true
-        this.title = "修改综合评估报告"
+        this.title = "修改面试题目库"
       })
     },
-    /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (this.form.id != null) {
-            updateReport(this.form).then(response => {
+            updateQuestion(this.form).then(response => {
               this.$modal.msgSuccess("修改成功")
               this.open = false
               this.getList()
             })
           } else {
-            addReport(this.form).then(response => {
+            addQuestion(this.form).then(response => {
               this.$modal.msgSuccess("新增成功")
               this.open = false
               this.getList()
@@ -246,22 +294,33 @@ export default {
         }
       })
     },
-    /** 删除按钮操作 */
     handleDelete(row) {
       const ids = row.id || this.ids
-      this.$modal.confirm('是否确认删除综合评估报告编号为"' + ids + '"的数据项？').then(function() {
-        return delReport(ids)
+      this.$modal.confirm('是否确认删除面试题目库编号为"' + ids + '"的数据项？').then(() => {
+        return delQuestion(ids)
       }).then(() => {
         this.getList()
         this.$modal.msgSuccess("删除成功")
       }).catch(() => {})
     },
-    /** 导出按钮操作 */
     handleExport() {
-      this.download('aip/report/export', {
+      this.download('aip/question/export', {
         ...this.queryParams
-      }, `report_${new Date().getTime()}.xlsx`)
+      }, `question_${new Date().getTime()}.xlsx`)
     }
   }
 }
 </script>
+
+<style scoped>
+/* 确保查询表单在一行显示，避免换行 */
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.inline-form .el-form-item {
+  margin-right: 15px;
+  margin-bottom: 0;
+}
+</style>

@@ -9,38 +9,7 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="轮次序号" prop="roundNum">
-        <el-input
-          v-model="queryParams.roundNum"
-          placeholder="请输入轮次序号"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="是否为AI发起的追问" prop="isFollowUp">
-        <el-input
-          v-model="queryParams.isFollowUp"
-          placeholder="请输入是否为AI发起的追问"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="学生答题录音文件路径" prop="audioUrl">
-        <el-input
-          v-model="queryParams.audioUrl"
-          placeholder="请输入学生答题录音文件路径"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="单点打分" prop="turnScore">
-        <el-input
-          v-model="queryParams.turnScore"
-          placeholder="请输入单点打分"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
+      <!-- 以下四项已删除 -->
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -97,12 +66,9 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="对话主键ID" align="center" prop="id" />
       <el-table-column label="归属的面试场次ID" align="center" prop="sessionId" />
-      <el-table-column label="轮次序号" align="center" prop="roundNum" />
-      <el-table-column label="是否为AI发起的追问" align="center" prop="isFollowUp" />
+      <!-- 以下四列已删除：轮次序号、是否为AI发起的追问、学生答题录音文件路径、单点打分 -->
       <el-table-column label="AI抛出的问题" align="center" prop="aiContent" />
       <el-table-column label="学生回答的文本" align="center" prop="userContent" />
-      <el-table-column label="学生答题录音文件路径" align="center" prop="audioUrl" />
-      <el-table-column label="单点打分" align="center" prop="turnScore" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
@@ -122,7 +88,7 @@
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
       v-show="total>0"
       :total="total"
@@ -137,23 +103,12 @@
         <el-form-item label="归属的面试场次ID" prop="sessionId">
           <el-input v-model="form.sessionId" placeholder="请输入归属的面试场次ID" />
         </el-form-item>
-        <el-form-item label="轮次序号" prop="roundNum">
-          <el-input v-model="form.roundNum" placeholder="请输入轮次序号" />
-        </el-form-item>
-        <el-form-item label="是否为AI发起的追问" prop="isFollowUp">
-          <el-input v-model="form.isFollowUp" placeholder="请输入是否为AI发起的追问" />
-        </el-form-item>
+        <!-- 以下四项已删除：轮次序号、是否为AI发起的追问、学生答题录音文件路径、单点打分 -->
         <el-form-item label="AI抛出的问题">
           <editor v-model="form.aiContent" :min-height="192"/>
         </el-form-item>
         <el-form-item label="学生回答的文本">
           <editor v-model="form.userContent" :min-height="192"/>
-        </el-form-item>
-        <el-form-item label="学生答题录音文件路径" prop="audioUrl">
-          <el-input v-model="form.audioUrl" placeholder="请输入学生答题录音文件路径" />
-        </el-form-item>
-        <el-form-item label="单点打分" prop="turnScore">
-          <el-input v-model="form.turnScore" placeholder="请输入单点打分" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -189,25 +144,19 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
-      // 查询参数
+      // 查询参数（已删除 roundNum, isFollowUp, audioUrl, turnScore）
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         sessionId: null,
-        roundNum: null,
-        isFollowUp: null,
         aiContent: null,
         userContent: null,
-        audioUrl: null,
-        turnScore: null,
       },
       // 表单参数
       form: {},
-      // 表单校验
+      // 表单校验（已删除 roundNum 的必填校验）
       rules: {
-        roundNum: [
-          { required: true, message: "轮次序号不能为空", trigger: "blur" }
-        ],
+        // 可根据需要添加其他校验，例如 sessionId 等
       }
     }
   },
@@ -229,17 +178,13 @@ export default {
       this.open = false
       this.reset()
     },
-    // 表单重置
+    // 表单重置（已删除相应字段）
     reset() {
       this.form = {
         id: null,
         sessionId: null,
-        roundNum: null,
-        isFollowUp: null,
         aiContent: null,
         userContent: null,
-        audioUrl: null,
-        turnScore: null,
         createTime: null
       }
       this.resetForm("form")
@@ -257,7 +202,7 @@ export default {
     // 多选框选中数据
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
+      this.single = selection.length !== 1
       this.multiple = !selection.length
     },
     /** 新增按钮操作 */
