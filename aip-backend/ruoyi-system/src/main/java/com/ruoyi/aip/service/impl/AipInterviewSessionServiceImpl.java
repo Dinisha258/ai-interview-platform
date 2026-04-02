@@ -188,6 +188,7 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
         AgentChatReqDTO agentReq = new AgentChatReqDTO();
         agentReq.setSessionId(sessionId);
         agentReq.setCurrentInput(userContent);
+        agentReq.setAudioUrl(chatDTO.getAudioUrl());
         agentReq.setPositionName(positionName);
         agentReq.setTargetLevel(session.getTargetLevel());
         // 传给大模型最近的 8 条记录作为记忆

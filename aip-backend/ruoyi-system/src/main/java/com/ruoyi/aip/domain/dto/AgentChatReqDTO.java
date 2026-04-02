@@ -9,7 +9,8 @@ import java.util.List;
 @Data
 public class AgentChatReqDTO {
     private Long sessionId;
-    private String currentInput;     // 学生本次回答
+    private String currentInput;     // 学生本次回答（纯文本输入）
+    private String audioUrl;         // 录音文件在 MinIO 上的 URL
     private String positionName;     // 岗位名
     private Integer targetLevel;     // 难度等级
     private List<ChatMessageDTO> history; // Redis 历史记录

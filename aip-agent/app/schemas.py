@@ -1,16 +1,20 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
-# 定义单条历史记录的格式
-class Message(BaseModel):
-    role: str  # "ai" 或 "user"
+class ChatMessage(BaseModel):
+    role: str
     content: str
 
-# Spring Boot 传过来的总包
-class InterviewRequest(BaseModel):
-    session_id: int
-    current_input: str         # 学生这一轮说的话
-    history: List[Message]      # 之前几轮的记录
-    position_name: str         # 岗位名称
-    target_level: int          # 难度等级
-    is_audio: bool = False     # 是否是语音输入
+class AgentChatReq(BaseModel):
+    sessionId: int
+    currentInput: Optional[str] = None # 可选，语音模式下这个字段可能是空的
+    audioUrl: Optional[str] = None     # 接收 MinIO 的录音下载链接
+    positionName: str
+    targetLevel: int
+    history: List[ChatMessage] = []
+
+class AgentChatResp(BaseModel):
+    aiReply: str
+    isFinished: bool
+    turnScore: float
+    ttsAudioBase64: str = ""  # 直接返给前端播放的音频流
