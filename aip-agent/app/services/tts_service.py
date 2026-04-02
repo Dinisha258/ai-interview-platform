@@ -20,20 +20,29 @@ async def synthesize_text(text: str) -> str:
     def _call_aliyun_tts():
         # 调用百炼的语音合成接口
         return SpeechSynthesizer.call(
-            model='qwen3-tts-flash', # 使用你指定的极速模型
+            model='sambert-zhichu-v1', # 知楚（标准男声面试官）
             text=text,
-            sample_rate=16000,
-            format='wav' # 网页端最容易兼容的格式
+            sample_rate=16000,         # sambert 模型的标准采样率是 16000
+            format='wav'
         )
 
     result = await loop.run_in_executor(None, _call_aliyun_tts)
 
     if result.get_audio_data() is not None:
-        # 直接拿内存里的字节流，不写硬盘
         audio_bytes = result.get_audio_data()
         audio_b64 = base64.b64encode(audio_bytes).decode('utf-8')
         print("[TTS] 合成成功，已转为 Base64")
+
+        #================测试部分，最终要删掉这部分代码=====================
+        audio_bytes = base64.b64decode(audio_b64)
+        output_file = "test_output.wav"
+        with open(output_file, "wb") as f:
+            f.write(audio_bytes)
+
+        #================测试部分，最终要删掉这部分代码=====================
+
+
         return audio_b64
     else:
-        print(f"[TTS] 合成失败: {result.message}")
+        print(f"[TTS] 合成失败，阿里云返回报错详情: {result.get_response()}")
         return ""
