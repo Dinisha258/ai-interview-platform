@@ -3,6 +3,7 @@
     <div class="sidebar">
       <div class="sidebar-header">
         <span class="title">面试记录</span>
+        <el-button type="primary" size="mini" icon="el-icon-plus" @click="openNewDialog">新面试</el-button>
       </div>
       <div class="session-list">
         <div
@@ -71,11 +72,34 @@
         </div>
       </div>
     </div>
+
+    <!-- 新建面试对话框 -->
+    <el-dialog title="开始新面试" :visible.sync="showNewDialog" width="420px" :close-on-click-modal="false" :close-on-press-escape="false" :show-close="false">
+      <el-form :model="newForm" label-width="80px">
+        <el-form-item label="面试岗位">
+          <el-select v-model="newForm.positionId" placeholder="请选择岗位" style="width: 100%">
+            <el-option v-for="p in positionOptions" :key="p.id" :label="p.positionName" :value="p.id"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="目标等级">
+          <el-select v-model="newForm.targetLevel" placeholder="请选择等级" style="width: 100%">
+            <el-option :value="1" label="实习生"></el-option>
+            <el-option :value="2" label="初级"></el-option>
+            <el-option :value="3" label="中级"></el-option>
+            <el-option :value="4" label="高级"></el-option>
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button type="primary" :loading="newLoading" @click="handleStartInterview">开始面试</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { interviewChat, endInterview, listMySessions, getDialogues, uploadAudio } from "@/api/aip/interview";
+import { startInterview, interviewChat, endInterview, listMySessions, getDialogues, uploadAudio } from "@/api/aip/interview";
+import { listPosition } from "@/api/aip/position";
 
 export default {
   name: "InterviewChat",
@@ -87,6 +111,11 @@ export default {
       roundNum: 0,
       sessionList: [],
       messageList: [],
+      // 新建面试
+      showNewDialog: false,
+      newLoading: false,
+      newForm: { positionId: null, targetLevel: null },
+      positionOptions: [],
       // 语音录制
       isRecording: false,
       recordingSeconds: 0,
@@ -115,12 +144,58 @@ export default {
       try {
         const res = await listMySessions();
         this.sessionList = res.data || [];
-        if (this.sessionList.length > 0) {
-          this.activeSessionId = this.sessionList[0].id;
-          this.loadDialogues(this.activeSessionId);
+        // 优先选中进行中的会话
+        const activeSession = this.sessionList.find(s => s.status === 0);
+        if (activeSession) {
+          this.activeSessionId = activeSession.id;
+          this.loadDialogues(activeSession.id);
+        } else {
+          // 没有进行中的会话，弹出新建对话框
+          this.openNewDialog();
         }
       } catch (e) {
         console.error("加载会话列表失败", e);
+      }
+    },
+
+    // 打开新建面试对话框
+    async openNewDialog() {
+      this.newForm = { positionId: null, targetLevel: null };
+      this.showNewDialog = true;
+      try {
+        const res = await listPosition();
+        this.positionOptions = res.rows || [];
+      } catch (e) {
+        this.$message.error("加载岗位列表失败");
+      }
+    },
+
+    // 开始新面试
+    async handleStartInterview() {
+      if (!this.newForm.positionId) {
+        this.$message.warning("请选择面试岗位");
+        return;
+      }
+      if (!this.newForm.targetLevel) {
+        this.$message.warning("请选择目标等级");
+        return;
+      }
+      this.newLoading = true;
+      try {
+        const res = await startInterview(this.newForm);
+        this.showNewDialog = false;
+        this.$message.success("面试已开始");
+        // 重新加载会话列表并选中新会话
+        const listRes = await listMySessions();
+        this.sessionList = listRes.data || [];
+        const newId = res.data;
+        this.activeSessionId = newId;
+        this.loadDialogues(newId);
+      } catch (e) {
+        this.$message.error("创建面试失败，请重试");
+        console.error("创建面试失败", e);
+      } finally {
+        this.newLoading = false;
       }
     },
 
@@ -399,6 +474,9 @@ export default {
   font-weight: bold;
   font-size: 16px;
   color: #303133;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .session-list {
