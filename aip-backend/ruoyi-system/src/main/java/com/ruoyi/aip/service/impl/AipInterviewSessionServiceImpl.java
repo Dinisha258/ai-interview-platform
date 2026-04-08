@@ -15,10 +15,11 @@ import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.framework.manager.AsyncManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import com.ruoyi.aip.mapper.AipInterviewSessionMapper;
 import com.ruoyi.aip.domain.AipInterviewSession;
@@ -45,6 +46,10 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
 
     @Autowired
     private AipPositionMapper positionMapper;
+
+    @Autowired
+    @Qualifier("threadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
     @Value("${aip.agent.url}")
     private String agentUrl;
@@ -219,19 +224,18 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
 
         // 6. 异步存入 MySQL 落库
         final String finalUserContent = userContent;
-        AsyncManager.me().execute(new TimerTask() {
-            @Override
-            public void run() {
-                AipInterviewDialogue dialogueLog = new AipInterviewDialogue();
-                dialogueLog.setSessionId(sessionId);
-                dialogueLog.setRoundNum(chatDTO.getRoundNum());
-                dialogueLog.setUserContent(finalUserContent);
-                dialogueLog.setAudioUrl(chatDTO.getAudioUrl());
-                dialogueLog.setAiContent(agentResp.getAiReply());
-                dialogueLog.setTurnScore(new java.math.BigDecimal(agentResp.getTurnScore() != null ? agentResp.getTurnScore() : 0));
-                dialogueLog.setCreateTime(DateUtils.getNowDate());
-                dialogueMapper.insertAipInterviewDialogue(dialogueLog);
-            }
+
+        threadPoolTaskExecutor.execute(() -> {
+            AipInterviewDialogue dialogueLog = new AipInterviewDialogue();
+            dialogueLog.setSessionId(sessionId);
+            dialogueLog.setRoundNum(chatDTO.getRoundNum());
+            dialogueLog.setUserContent(finalUserContent);
+            dialogueLog.setAudioUrl(chatDTO.getAudioUrl());
+            dialogueLog.setAiContent(agentResp.getAiReply());
+            dialogueLog.setTurnScore(new java.math.BigDecimal(agentResp.getTurnScore() != null ? agentResp.getTurnScore() : 0));
+            dialogueLog.setCreateTime(DateUtils.getNowDate());
+
+            dialogueMapper.insertAipInterviewDialogue(dialogueLog);
         });
 
         // 7. 返回给前端展示
