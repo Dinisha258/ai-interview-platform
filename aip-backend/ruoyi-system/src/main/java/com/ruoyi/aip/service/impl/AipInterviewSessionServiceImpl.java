@@ -211,7 +211,10 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
         } catch (Exception e) {
             // 如果 Python 挂了，移除刚才加到 redis 里的最后一条，防止脏数据
             historyList.remove(historyList.size() - 1);
-            redisCache.setCacheList(cacheKey, historyList);
+            redisCache.deleteObject(cacheKey);
+            if (!historyList.isEmpty()) {
+                redisCache.setCacheList(cacheKey, historyList);
+            }
             throw new ServiceException("AI 大脑思考异常，请稍后再试：" + e.getMessage());
         }
 
