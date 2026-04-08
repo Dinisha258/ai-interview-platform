@@ -1,7 +1,6 @@
 package com.ruoyi.aip.service.impl;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import com.ruoyi.aip.domain.AipInterviewDialogue;
 import com.ruoyi.aip.domain.dto.AgentChatReqDTO;
