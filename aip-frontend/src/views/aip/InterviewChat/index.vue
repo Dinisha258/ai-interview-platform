@@ -11,8 +11,11 @@
           :class="['session-item', { active: activeSessionId === session.id }]"
           @click="handleSelectSession(session.id)"
         >
-          <div class="session-title">{{ session.positionName }} 面试</div>
-          <div class="session-time">{{ session.createTime }}</div>
+          <div class="session-title">{{ session.positionName || '未知岗位' }} 面试</div>
+          <div class="session-time">{{ session.createTime }}
+            <el-tag v-if="session.status === 0" size="mini" type="success">进行中</el-tag>
+            <el-tag v-else size="mini" type="info">已结束</el-tag>
+          </div>
         </div>
       </div>
     </div>
@@ -22,7 +25,7 @@
         <span class="chat-title">
           <i class="el-icon-headset"></i> AI 面试官
         </span>
-        <el-button type="danger" size="small" plain icon="el-icon-switch-button" @click="handleEndInterview">
+        <el-button type="danger" size="small" plain icon="el-icon-switch-button" @click="handleEndInterview" :disabled="!isSessionActive">
           结束面试
         </el-button>
       </div>
@@ -54,8 +57,17 @@
           @keyup.enter.native="handleSend"
         ></el-input>
         <div class="input-actions">
-          <el-button type="info" circle icon="el-icon-mic" title="语音输入(开发中)"></el-button>
-          <el-button type="primary" :loading="isAiReplying" @click="handleSend">发送回答 <i class="el-icon-s-promotion"></i></el-button>
+          <el-tooltip :content="isRecording ? '点击停止录音并发送' : '点击开始语音输入'" placement="top">
+            <el-button
+              :type="isRecording ? 'danger' : 'info'"
+              circle
+              :icon="isRecording ? 'el-icon-turn-off-microphone' : 'el-icon-mic'"
+              @click="handleVoiceInput"
+              :disabled="isAiReplying || !isSessionActive"
+            ></el-button>
+          </el-tooltip>
+          <span v-if="isRecording" class="recording-hint">录音中... {{ recordingSeconds }}s</span>
+          <el-button type="primary" :loading="isAiReplying" @click="handleSend" :disabled="!isSessionActive">发送回答 <i class="el-icon-s-promotion"></i></el-button>
         </div>
       </div>
     </div>
@@ -63,27 +75,86 @@
 </template>
 
 <script>
+import { interviewChat, endInterview, listMySessions, getDialogues, uploadAudio } from "@/api/aip/interview";
+
 export default {
   name: "InterviewChat",
   data() {
     return {
-      activeSessionId: 1,
-      isAiReplying: false, // 控制是否正在等待 AI 响应
+      activeSessionId: null,
+      isAiReplying: false,
       inputContent: "",
-
-      // 模拟会话列表（后续调 /api/interview/session/list 接口替换）
-      sessionList: [
-        { id: 1, positionName: "Java 后端开发", createTime: "2026-04-01 10:00" },
-        { id: 2, positionName: "前端开发", createTime: "2026-03-30 14:30" }
-      ],
-
-      // 模拟当前聊天的消息记录
-      messageList: [
-        { role: 'ai', content: "你好，我是锐捷网络的AI面试官。我已经准备好对你进行技术面了，请先做一个简单的自我介绍吧。", isThinking: false }
-      ]
+      roundNum: 0,
+      sessionList: [],
+      messageList: [],
+      // 语音录制
+      isRecording: false,
+      recordingSeconds: 0,
+      mediaRecorder: null,
+      audioChunks: [],
+      recordingTimer: null
     };
   },
+  computed: {
+    activeSession() {
+      return this.sessionList.find(s => s.id === this.activeSessionId);
+    },
+    isSessionActive() {
+      return this.activeSession && this.activeSession.status === 0;
+    }
+  },
+  created() {
+    this.loadSessions();
+  },
+  beforeDestroy() {
+    this.stopRecording();
+  },
   methods: {
+    // 加载当前用户的会话列表
+    async loadSessions() {
+      try {
+        const res = await listMySessions();
+        this.sessionList = res.data || [];
+        if (this.sessionList.length > 0) {
+          this.activeSessionId = this.sessionList[0].id;
+          this.loadDialogues(this.activeSessionId);
+        }
+      } catch (e) {
+        console.error("加载会话列表失败", e);
+      }
+    },
+
+    // 加载指定会话的对话记录
+    async loadDialogues(sessionId) {
+      try {
+        const res = await getDialogues(sessionId);
+        const dialogues = res.data || [];
+        this.messageList = [];
+        this.roundNum = 0;
+        // 静态开场白
+        this.messageList.push({
+          role: 'ai',
+          content: "你好，我是AI面试官。我已经准备好对你进行技术面了，请先做一个简单的自我介绍吧。",
+          isThinking: false
+        });
+        // 还原历史对话
+        dialogues.forEach(d => {
+          if (d.userContent) {
+            this.messageList.push({ role: 'user', content: d.userContent, isThinking: false });
+          }
+          if (d.aiContent) {
+            this.messageList.push({ role: 'ai', content: d.aiContent, isThinking: false });
+          }
+          if (d.roundNum != null && d.roundNum > this.roundNum) {
+            this.roundNum = d.roundNum;
+          }
+        });
+        this.scrollToBottom();
+      } catch (e) {
+        console.error("加载对话记录失败", e);
+      }
+    },
+
     // 切换会话
     handleSelectSession(id) {
       if (this.isAiReplying) {
@@ -91,73 +162,194 @@ export default {
         return;
       }
       this.activeSessionId = id;
-      this.$message.info(`切换到了会话: ${id} (这里后续接拉取历史记录接口)`);
-      // TODO: 调接口拉取当前 session 的历史记录赋给 this.messageList
+      this.loadDialogues(id);
     },
 
-    // 发送消息
+    // 发送文字消息
     async handleSend() {
-      // 阻止空发和回车换行造成的空发
       const text = this.inputContent.trim();
       if (!text) return;
       if (this.isAiReplying) return;
+      if (!this.isSessionActive) {
+        this.$message.warning("该会话已结束，无法继续发送消息");
+        return;
+      }
 
-      // 1. 把用户的话推入消息列表
       this.messageList.push({ role: 'user', content: text, isThinking: false });
       this.inputContent = "";
       this.scrollToBottom();
 
-      // 2. 锁定状态，推入一个“思考中”的 AI 假消息占位
+      await this.sendToAgent({ textContent: text });
+    },
+
+    // 语音输入
+    async handleVoiceInput() {
+      if (this.isRecording) {
+        this.stopRecording();
+      } else {
+        this.startRecording();
+      }
+    },
+
+    // 开始录音
+    async startRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.audioChunks = [];
+        this.mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+        this.mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            this.audioChunks.push(e.data);
+          }
+        };
+
+        this.mediaRecorder.onstop = async () => {
+          // 停止所有音轨
+          stream.getTracks().forEach(t => t.stop());
+
+          if (this.audioChunks.length === 0) return;
+
+          const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+          await this.sendVoiceMessage(audioBlob);
+        };
+
+        this.mediaRecorder.start();
+        this.isRecording = true;
+        this.recordingSeconds = 0;
+        this.recordingTimer = setInterval(() => {
+          this.recordingSeconds++;
+          // 最长录音 120 秒自动停止
+          if (this.recordingSeconds >= 120) {
+            this.stopRecording();
+          }
+        }, 1000);
+      } catch (e) {
+        this.$message.error("无法访问麦克风，请检查浏览器权限设置");
+        console.error("麦克风访问失败", e);
+      }
+    },
+
+    // 停止录音
+    stopRecording() {
+      if (this.recordingTimer) {
+        clearInterval(this.recordingTimer);
+        this.recordingTimer = null;
+      }
+      if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+        this.mediaRecorder.stop();
+      }
+      this.isRecording = false;
+    },
+
+    // 发送语音消息
+    async sendVoiceMessage(audioBlob) {
+      this.messageList.push({ role: 'user', content: '🎤 语音消息 (' + this.recordingSeconds + 's)', isThinking: false });
+      this.scrollToBottom();
+
+      try {
+        // 上传音频到 MinIO
+        const audioFile = new File([audioBlob], 'recording_' + Date.now() + '.webm', { type: 'audio/webm' });
+        const uploadRes = await uploadAudio(audioFile);
+        const audioUrl = uploadRes.url;
+
+        await this.sendToAgent({ audioUrl: audioUrl });
+      } catch (e) {
+        this.$message.error("语音上传失败，请重试");
+        console.error("语音上传失败", e);
+        // 移除语音消息占位
+        this.messageList.pop();
+      }
+    },
+
+    // 统一发送到 Agent
+    async sendToAgent(params) {
       this.isAiReplying = true;
       const aiMsgIndex = this.messageList.push({ role: 'ai', content: "", isThinking: true }) - 1;
       this.scrollToBottom();
 
-      // ====== 模拟向后端发送请求 (TODO: 替换为真实的 /api/interview/chat 接口) ======
-      await this.mockApiCall();
-      // ======================================================================
+      this.roundNum++;
 
-      // 3. 拿到结果后，取消思考状态，准备打字机效果
-      const replyText = "了解了，既然你应聘的是Java岗位，那请你简单谈谈对 Spring Boot 自动装配原理的理解。";
-      this.messageList[aiMsgIndex].isThinking = false;
+      try {
+        const res = await interviewChat({
+          sessionId: this.activeSessionId,
+          roundNum: this.roundNum,
+          textContent: params.textContent || null,
+          audioUrl: params.audioUrl || null
+        });
+        const data = res.data;
+        this.messageList[aiMsgIndex].isThinking = false;
 
-      // 4. 执行打字机动画
-      this.playTypewriterEffect(aiMsgIndex, replyText);
+        // 播放 TTS 语音
+        this.playTtsAudio(data.ttsAudioBase64);
+
+        this.playTypewriterEffect(aiMsgIndex, data.aiReply, () => {
+          if (data.isFinished) {
+            this.doEndInterview();
+          }
+        });
+      } catch (e) {
+        this.messageList[aiMsgIndex].isThinking = false;
+        this.messageList[aiMsgIndex].content = "抱歉，AI 思考时出现了问题，请重试。";
+        this.isAiReplying = false;
+        this.roundNum--;
+      }
     },
 
-    // 模拟接口耗时
-    mockApiCall() {
-      return new Promise(resolve => setTimeout(resolve, 2000));
+    // 播放 TTS 音频
+    playTtsAudio(base64Audio) {
+      if (!base64Audio) return;
+      try {
+        const audio = new Audio('data:audio/wav;base64,' + base64Audio);
+        audio.play().catch(e => console.warn("TTS 自动播放被浏览器拦截", e));
+      } catch (e) {
+        console.warn("TTS 播放失败", e);
+      }
     },
 
     // 打字机特效核心逻辑
-    playTypewriterEffect(msgIndex, fullText) {
+    playTypewriterEffect(msgIndex, fullText, onComplete) {
       let currentIndex = 0;
       let currentText = "";
 
       const typeInterval = setInterval(() => {
         if (currentIndex < fullText.length) {
           currentText += fullText.charAt(currentIndex);
-          // 增量更新消息内容
           this.messageList[msgIndex].content = currentText;
           currentIndex++;
           this.scrollToBottom();
         } else {
           clearInterval(typeInterval);
-          this.isAiReplying = false; // 打字完成，解除锁定，允许用户发下一句
+          this.isAiReplying = false;
+          if (onComplete) onComplete();
         }
-      }, 50); // 50ms 敲一个字，可以自己调速度
+      }, 50);
     },
 
     // 结束面试
     handleEndInterview() {
+      if (!this.isSessionActive) {
+        this.$message.info("该会话已结束");
+        return;
+      }
       this.$confirm('确定要结束当前的面试吗？结束之后将生成面试报告。', '提示', {
         confirmButtonText: '确定结束',
         cancelButtonText: '继续面试',
         type: 'warning'
       }).then(() => {
-        this.$message.success('面试已结束，正在生成报告...');
-        // TODO: 调用结束接口，跳转到报告页
+        this.doEndInterview();
       }).catch(() => {});
+    },
+
+    // 调用结束接口
+    async doEndInterview() {
+      try {
+        await endInterview(this.activeSessionId);
+        this.$message.success("面试已结束");
+        this.loadSessions();
+      } catch (e) {
+        console.error("结束面试失败", e);
+      }
     },
 
     // 保持滚动条在最底部
@@ -348,6 +540,18 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.recording-hint {
+  color: #F56C6C;
+  font-size: 13px;
+  margin-left: 10px;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* === AI 思考中的动态省略号动画 === */

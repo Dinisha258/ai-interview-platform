@@ -135,6 +135,15 @@ xss:
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
 
+# AIP 业务配置
+aip:
+  agent:
+    # FastAPI Agent 微服务地址
+    url: http://127.0.0.1:8000/api/agent/chat
+  redis:
+    # 面试上下文 Redis Key 前缀
+    ctx-prefix: "aip:interview:ctx:"
+
 # 自定义 MinIO 配置
 minio:
   endpoint: http://frp-fan.com:15064 # MinIO API 地址

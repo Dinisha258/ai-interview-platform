@@ -2,6 +2,8 @@ package com.ruoyi.aip.service;
 
 import java.util.List;
 import com.ruoyi.aip.domain.AipInterviewSession;
+import com.ruoyi.aip.domain.dto.AgentChatRespDTO;
+import com.ruoyi.aip.domain.dto.InterviewChatDTO;
 import com.ruoyi.aip.domain.dto.StartInterviewDTO;
 
 /**
@@ -67,4 +69,17 @@ public interface IAipInterviewSessionService
      * @return 会话主键ID
      */
     public Long startInterview(Long userId, StartInterviewDTO startDTO);
+
+    /**
+     * 核心问答调度逻辑
+     * @param chatDTO 问答请求参数
+     * @return AI 回复
+     */
+    public AgentChatRespDTO processChat(InterviewChatDTO chatDTO);
+
+    /**
+     * 结束面试会话
+     * @param sessionId 会话ID
+     */
+    public void endInterview(Long sessionId);
 }

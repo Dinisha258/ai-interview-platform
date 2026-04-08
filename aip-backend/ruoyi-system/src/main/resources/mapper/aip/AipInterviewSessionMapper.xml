@@ -18,28 +18,32 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
+        <result property="positionName"    column="position_name"    />
     </resultMap>
 
     <sql id="selectAipInterviewSessionVo">
-        select id, user_id, position_id, target_level, status, total_score, start_time, end_time, create_by, create_time, update_by, update_time, remark from aip_interview_session
+        select s.id, s.user_id, s.position_id, s.target_level, s.status, s.total_score, s.start_time, s.end_time, s.create_by, s.create_time, s.update_by, s.update_time, s.remark, p.name as position_name
+        from aip_interview_session s
+        left join aip_position p on s.position_id = p.id
     </sql>
 
     <select id="selectAipInterviewSessionList" parameterType="AipInterviewSession" resultMap="AipInterviewSessionResult">
         <include refid="selectAipInterviewSessionVo"/>
         <where>
-            <if test="userId != null "> and user_id = #{userId}</if>
-            <if test="positionId != null "> and position_id = #{positionId}</if>
-            <if test="targetLevel != null "> and target_level = #{targetLevel}</if>
-            <if test="status != null "> and status = #{status}</if>
-            <if test="totalScore != null "> and total_score = #{totalScore}</if>
-            <if test="startTime != null "> and start_time = #{startTime}</if>
-            <if test="endTime != null "> and end_time = #{endTime}</if>
+            <if test="userId != null "> and s.user_id = #{userId}</if>
+            <if test="positionId != null "> and s.position_id = #{positionId}</if>
+            <if test="targetLevel != null "> and s.target_level = #{targetLevel}</if>
+            <if test="status != null "> and s.status = #{status}</if>
+            <if test="totalScore != null "> and s.total_score = #{totalScore}</if>
+            <if test="startTime != null "> and s.start_time = #{startTime}</if>
+            <if test="endTime != null "> and s.end_time = #{endTime}</if>
         </where>
+        order by s.create_time desc
     </select>
 
     <select id="selectAipInterviewSessionById" parameterType="Long" resultMap="AipInterviewSessionResult">
         <include refid="selectAipInterviewSessionVo"/>
-        where id = #{id}
+        where s.id = #{id}
     </select>
 
     <insert id="insertAipInterviewSession" parameterType="AipInterviewSession" useGeneratedKeys="true" keyProperty="id">
@@ -106,7 +110,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectActiveSessionByUserId" parameterType="Long" resultMap="AipInterviewSessionResult">
         <include refid="selectAipInterviewSessionVo"/>
-        where user_id = #{userId} and status = 0
+        where s.user_id = #{userId} and s.status = 0
         limit 1
     </select>
 </mapper>

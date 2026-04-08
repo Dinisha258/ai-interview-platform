@@ -1,6 +1,12 @@
 package com.ruoyi.aip.controller.control;
 
+import java.util.List;
+
+import com.ruoyi.aip.domain.AipInterviewDialogue;
+import com.ruoyi.aip.domain.AipInterviewSession;
+import com.ruoyi.aip.domain.dto.AgentChatRespDTO;
 import com.ruoyi.aip.domain.dto.InterviewChatDTO;
+import com.ruoyi.aip.service.IAipInterviewDialogueService;
 import com.ruoyi.aip.service.IAipInterviewSessionService;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
@@ -17,17 +23,16 @@ public class AipInterviewController extends BaseController {
     @Autowired
     private IAipInterviewSessionService iAipInterviewSessionService;
 
+    @Autowired
+    private IAipInterviewDialogueService iAipInterviewDialogueService;
+
     /**
      * 开始/创建面试会话
      */
     @PostMapping("/start")
     public AjaxResult start(@Validated @RequestBody StartInterviewDTO startDTO) {
-        // 获取当前登录用户ID
         Long userId = SecurityUtils.getUserId();
-
-        // 开启会话
         Long sessionId = iAipInterviewSessionService.startInterview(userId, startDTO);
-
         return AjaxResult.success("会话创建成功", sessionId);
     }
 
@@ -36,15 +41,39 @@ public class AipInterviewController extends BaseController {
      */
     @PostMapping("/chat")
     public AjaxResult chat(@Validated @RequestBody InterviewChatDTO chatDTO) {
-        // TODO
-        // 1. 调用 AipDialogueServiceImpl (我们自己建的包装类，包含Redis操作)
-        // 2. 发送 HTTP 请求给 FastAPI Agent
-        // 3. 拿到 AI 结果后，调用你刚才生成的 aipInterviewDialogueService.insertAipInterviewDialogue() 异步落库
+        AgentChatRespDTO aiResponse = iAipInterviewSessionService.processChat(chatDTO);
+        return AjaxResult.success(aiResponse);
+    }
 
-        // 假设 service 层返回的是处理好的 AI 回复对象
-//        Object aiResponse = iAipInterviewSessionService.processChat(chatDTO);
+    /**
+     * 结束面试会话
+     */
+    @PostMapping("/end/{sessionId}")
+    public AjaxResult end(@PathVariable Long sessionId) {
+        iAipInterviewSessionService.endInterview(sessionId);
+        return AjaxResult.success("面试已结束");
+    }
 
-//        return AjaxResult.success(aiResponse);
-        return null;
+    /**
+     * 获取当前用户的面试会话列表（含岗位名称）
+     */
+    @GetMapping("/sessions")
+    public AjaxResult sessions() {
+        Long userId = SecurityUtils.getUserId();
+        AipInterviewSession query = new AipInterviewSession();
+        query.setUserId(userId);
+        List<AipInterviewSession> list = iAipInterviewSessionService.selectAipInterviewSessionList(query);
+        return AjaxResult.success(list);
+    }
+
+    /**
+     * 获取指定会话的对话记录
+     */
+    @GetMapping("/dialogues/{sessionId}")
+    public AjaxResult dialogues(@PathVariable Long sessionId) {
+        AipInterviewDialogue query = new AipInterviewDialogue();
+        query.setSessionId(sessionId);
+        List<AipInterviewDialogue> list = iAipInterviewDialogueService.selectAipInterviewDialogueList(query);
+        return AjaxResult.success(list);
     }
 }

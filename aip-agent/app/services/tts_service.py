@@ -32,16 +32,6 @@ async def synthesize_text(text: str) -> str:
         audio_bytes = result.get_audio_data()
         audio_b64 = base64.b64encode(audio_bytes).decode('utf-8')
         print("[TTS] 合成成功，已转为 Base64")
-
-        #================测试部分，最终要删掉这部分代码=====================
-        audio_bytes = base64.b64decode(audio_b64)
-        output_file = "test_output.wav"
-        with open(output_file, "wb") as f:
-            f.write(audio_bytes)
-
-        #================测试部分，最终要删掉这部分代码=====================
-
-
         return audio_b64
     else:
         print(f"[TTS] 合成失败，阿里云返回报错详情: {result.get_response()}")

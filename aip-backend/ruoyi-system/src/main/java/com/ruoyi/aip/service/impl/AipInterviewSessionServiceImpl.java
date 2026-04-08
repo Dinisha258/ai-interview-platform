@@ -1,6 +1,7 @@
 package com.ruoyi.aip.service.impl;
 
 import java.util.List;
+import java.util.TimerTask;
 
 import com.ruoyi.aip.domain.AipInterviewDialogue;
 import com.ruoyi.aip.domain.dto.AgentChatReqDTO;
@@ -13,7 +14,10 @@ import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.framework.manager.AsyncManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import com.ruoyi.aip.mapper.AipInterviewSessionMapper;
@@ -42,16 +46,11 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
     @Autowired
     private AipPositionMapper positionMapper;
 
-    // TODO 地址写到配置文件里，prefix写进constant类里
-    // FastAPI 微服务的地址
-    private static final String AGENT_URL = "http://127.0.0.1:8000/api/agent/chat";
-    // Redis 上下文 Key 前缀
-    private static final String REDIS_CTX_PREFIX = "aip:interview:ctx:";
+    @Value("${aip.agent.url}")
+    private String agentUrl;
 
-
-
-
-
+    @Value("${aip.redis.ctx-prefix}")
+    private String redisCtxPrefix;
 
     /**
      * 查询面试会话流水
@@ -162,6 +161,7 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
     /**
      * 核心问答调度逻辑
      */
+    @Override
     public AgentChatRespDTO processChat(InterviewChatDTO chatDTO) {
         Long sessionId = chatDTO.getSessionId();
 
@@ -175,19 +175,23 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
         String positionName = positionMapper.selectAipPositionById(session.getPositionId()).getName();
 
         // 2. 更新 Redis，记录学生这轮的话
-        String cacheKey = REDIS_CTX_PREFIX + sessionId;
+        String cacheKey = redisCtxPrefix + sessionId;
         List<AgentChatReqDTO.ChatMessageDTO> historyList = redisCache.getCacheList(cacheKey);
         if (historyList == null) {
             historyList = new java.util.ArrayList<>();
         }
 
-        String userContent = chatDTO.getTextContent(); // TODO: 如果是语音URL，可以在这里调另一个接口先转文字，或者让 Python 端去转
+        // 文本优先；纯语音时由 Agent 端做 ASR，此处记录占位
+        String userContent = chatDTO.getTextContent();
+        if (StringUtils.isEmpty(userContent) && StringUtils.isNotEmpty(chatDTO.getAudioUrl())) {
+            userContent = "(语音输入)";
+        }
         historyList.add(new AgentChatReqDTO.ChatMessageDTO("user", userContent));
 
         // 3. 组装给 FastAPI 的请求包
         AgentChatReqDTO agentReq = new AgentChatReqDTO();
         agentReq.setSessionId(sessionId);
-        agentReq.setCurrentInput(userContent);
+        agentReq.setCurrentInput(chatDTO.getTextContent());
         agentReq.setAudioUrl(chatDTO.getAudioUrl());
         agentReq.setPositionName(positionName);
         agentReq.setTargetLevel(session.getTargetLevel());
@@ -198,7 +202,7 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
         RestTemplate restTemplate = new RestTemplate();
         AgentChatRespDTO agentResp;
         try {
-            ResponseEntity<AgentChatRespDTO> response = restTemplate.postForEntity(AGENT_URL, agentReq, AgentChatRespDTO.class);
+            ResponseEntity<AgentChatRespDTO> response = restTemplate.postForEntity(agentUrl, agentReq, AgentChatRespDTO.class);
             agentResp = response.getBody();
         } catch (Exception e) {
             // 如果 Python 挂了，移除刚才加到 redis 里的最后一条，防止脏数据
@@ -213,21 +217,45 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
         redisCache.setCacheList(cacheKey, historyList);
         redisCache.expire(cacheKey, 2, java.util.concurrent.TimeUnit.HOURS);
 
-        // TODO 线程池写一个Util
-        // 6. 异步存入 MySQL 落库 (使用线程池或简单开启新线程，不阻塞前端响应)
-        new Thread(() -> {
-            AipInterviewDialogue dialogueLog = new AipInterviewDialogue();
-            dialogueLog.setSessionId(sessionId);
-            dialogueLog.setRoundNum(chatDTO.getRoundNum());
-            dialogueLog.setUserContent(userContent);
-            dialogueLog.setAudioUrl(chatDTO.getAudioUrl());
-            dialogueLog.setAiContent(agentResp.getAiReply());
-            dialogueLog.setTurnScore(new java.math.BigDecimal(agentResp.getTurnScore() != null ? agentResp.getTurnScore() : 0));
-            dialogueLog.setCreateTime(com.ruoyi.common.utils.DateUtils.getNowDate());
-            dialogueMapper.insertAipInterviewDialogue(dialogueLog);
-        }).start();
+        // 6. 异步存入 MySQL 落库
+        final String finalUserContent = userContent;
+        AsyncManager.me().execute(new TimerTask() {
+            @Override
+            public void run() {
+                AipInterviewDialogue dialogueLog = new AipInterviewDialogue();
+                dialogueLog.setSessionId(sessionId);
+                dialogueLog.setRoundNum(chatDTO.getRoundNum());
+                dialogueLog.setUserContent(finalUserContent);
+                dialogueLog.setAudioUrl(chatDTO.getAudioUrl());
+                dialogueLog.setAiContent(agentResp.getAiReply());
+                dialogueLog.setTurnScore(new java.math.BigDecimal(agentResp.getTurnScore() != null ? agentResp.getTurnScore() : 0));
+                dialogueLog.setCreateTime(DateUtils.getNowDate());
+                dialogueMapper.insertAipInterviewDialogue(dialogueLog);
+            }
+        });
 
         // 7. 返回给前端展示
         return agentResp;
+    }
+
+    /**
+     * 结束面试会话
+     */
+    @Override
+    public void endInterview(Long sessionId) {
+        AipInterviewSession session = aipInterviewSessionMapper.selectAipInterviewSessionById(sessionId);
+        if (session == null) {
+            throw new ServiceException("会话不存在");
+        }
+        if (session.getStatus() != 0) {
+            throw new ServiceException("该会话已结束");
+        }
+        AipInterviewSession update = new AipInterviewSession();
+        update.setId(sessionId);
+        update.setStatus(1);
+        update.setEndTime(DateUtils.getNowDate());
+        update.setUpdateBy(SecurityUtils.getUsername());
+        update.setUpdateTime(DateUtils.getNowDate());
+        aipInterviewSessionMapper.updateAipInterviewSession(update);
     }
 }

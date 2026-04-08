@@ -55,6 +55,10 @@ public class AipInterviewSession extends BaseEntity
     @Excel(name = "面试结束时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date endTime;
 
+    /** 岗位名称（联表查询） */
+    @Excel(name = "岗位名称")
+    private String positionName;
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)

@@ -31,6 +31,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="audioUrl != null  and audioUrl != ''"> and audio_url = #{audioUrl}</if>
             <if test="turnScore != null "> and turn_score = #{turnScore}</if>
         </where>
+        order by round_num asc, create_time asc
     </select>
     
     <select id="selectAipInterviewDialogueById" parameterType="Long" resultMap="AipInterviewDialogueResult">
