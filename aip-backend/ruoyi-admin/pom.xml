@@ -42,7 +42,7 @@
             <version>1.6.2</version>
         </dependency>
 
-         <!-- Mysql驱动包 -->
+         <!-- Mysql驱动包（Spring Boot 2.5 BOM 管理版本，relocation 警告无影响） -->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
