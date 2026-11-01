@@ -45,6 +45,18 @@ public class AipInterviewReportServiceImpl implements IAipInterviewReportService
     }
 
     /**
+     * 根据面试场次ID查询报告(面试结束后前端拉取展示用)
+     *
+     * @param sessionId 面试场次ID
+     * @return 综合评估报告
+     */
+    @Override
+    public AipInterviewReport selectAipInterviewReportBySessionId(Long sessionId)
+    {
+        return aipInterviewReportMapper.selectAipInterviewReportBySessionId(sessionId);
+    }
+
+    /**
      * 新增综合评估报告
      * 
      * @param aipInterviewReport 综合评估报告

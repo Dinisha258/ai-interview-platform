@@ -1,19 +1,28 @@
 package com.ruoyi.aip.service.impl;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import com.ruoyi.aip.domain.AipInterviewDialogue;
+import com.ruoyi.aip.domain.AipInterviewReport;
+import com.ruoyi.aip.domain.AipPosition;
 import com.ruoyi.aip.domain.dto.AgentChatReqDTO;
 import com.ruoyi.aip.domain.dto.AgentChatRespDTO;
+import com.ruoyi.aip.domain.dto.AgentReportReqDTO;
+import com.ruoyi.aip.domain.dto.AgentReportRespDTO;
 import com.ruoyi.aip.domain.dto.InterviewChatDTO;
 import com.ruoyi.aip.domain.dto.StartInterviewDTO;
 import com.ruoyi.aip.mapper.AipInterviewDialogueMapper;
+import com.ruoyi.aip.mapper.AipInterviewReportMapper;
 import com.ruoyi.aip.mapper.AipPositionMapper;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +43,8 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class AipInterviewSessionServiceImpl implements IAipInterviewSessionService
 {
+    private static final Logger log = LoggerFactory.getLogger(AipInterviewSessionServiceImpl.class);
+
     @Autowired
     private AipInterviewSessionMapper aipInterviewSessionMapper;
 
@@ -45,6 +56,9 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
 
     @Autowired
     private AipPositionMapper positionMapper;
+
+    @Autowired
+    private AipInterviewReportMapper reportMapper;
 
     @Autowired
     @Qualifier("threadPoolTaskExecutor")
@@ -245,7 +259,7 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
     }
 
     /**
-     * 结束面试会话
+     * 结束面试会话:置状态为已完成,并同步生成评估报告
      */
     @Override
     public void endInterview(Long sessionId) {
@@ -263,5 +277,77 @@ public class AipInterviewSessionServiceImpl implements IAipInterviewSessionServi
         update.setUpdateBy(SecurityUtils.getUsername());
         update.setUpdateTime(DateUtils.getNowDate());
         aipInterviewSessionMapper.updateAipInterviewSession(update);
+
+        // 面试已结束,尝试生成评估报告(失败只记日志,不影响面试结束本身)
+        try {
+            generateReport(sessionId, session);
+        } catch (Exception e) {
+            log.warn("面试会话{}报告生成失败: {}", sessionId, e.getMessage());
+        }
+    }
+
+    /**
+     * 生成面试评估报告:
+     * 1. 查整场对话记录 → 2. 调 Agent 报告接口 → 3. 报告落库 + 回填会话总分
+     */
+    private void generateReport(Long sessionId, AipInterviewSession session) {
+        // 1. 查整场对话记录(按轮次排序)
+        AipInterviewDialogue query = new AipInterviewDialogue();
+        query.setSessionId(sessionId);
+        List<AipInterviewDialogue> dialogues = dialogueMapper.selectAipInterviewDialogueList(query);
+        if (dialogues == null || dialogues.isEmpty()) {
+            log.info("面试会话{}无对话记录,跳过报告生成", sessionId);
+            return;
+        }
+
+        // 查岗位名(岗位可能已被删除,做个兜底)
+        AipPosition position = positionMapper.selectAipPositionById(session.getPositionId());
+        String positionName = position != null ? position.getName() : "未知岗位";
+
+        // 2. 组装对话消息列表:一行对话记录 = 一条user回答 + 一条ai提问
+        List<AgentReportReqDTO.ChatMessageDTO> messages = new ArrayList<>();
+        dialogues.stream()
+                .sorted(Comparator.comparing(AipInterviewDialogue::getCreateTime))
+                .forEach(d -> {
+                    if (StringUtils.isNotEmpty(d.getUserContent())) {
+                        messages.add(new AgentReportReqDTO.ChatMessageDTO("user", d.getUserContent()));
+                    }
+                    if (StringUtils.isNotEmpty(d.getAiContent())) {
+                        messages.add(new AgentReportReqDTO.ChatMessageDTO("ai", d.getAiContent()));
+                    }
+                });
+
+        AgentReportReqDTO reportReq = new AgentReportReqDTO();
+        reportReq.setSessionId(sessionId);
+        reportReq.setPositionName(positionName);
+        reportReq.setTargetLevel(session.getTargetLevel());
+        reportReq.setDialogues(messages);
+
+        // 3. 调用 Python Agent 的报告接口(配置里的 /chat 换成 /report)
+        String reportUrl = agentUrl.replace("/chat", "/report");
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<AgentReportRespDTO> response = restTemplate.postForEntity(reportUrl, reportReq, AgentReportRespDTO.class);
+        AgentReportRespDTO reportResp = response.getBody();
+        if (reportResp == null) {
+            throw new ServiceException("报告服务无响应");
+        }
+
+        // 4. 报告落库
+        AipInterviewReport report = new AipInterviewReport();
+        report.setSessionId(sessionId);
+        report.setRadarDimensions(reportResp.getRadarDimensions());
+        report.setHighlights(reportResp.getHighlights());
+        report.setWeaknesses(reportResp.getWeaknesses());
+        report.setLearningAdvice(reportResp.getLearningAdvice());
+        report.setCreateTime(DateUtils.getNowDate());
+        reportMapper.insertAipInterviewReport(report);
+
+        // 5. 回填会话总分
+        AipInterviewSession scoreUpdate = new AipInterviewSession();
+        scoreUpdate.setId(sessionId);
+        scoreUpdate.setTotalScore(reportResp.getTotalScore());
+        aipInterviewSessionMapper.updateAipInterviewSession(scoreUpdate);
+
+        log.info("面试会话{}评估报告生成成功,总分: {}", sessionId, reportResp.getTotalScore());
     }
 }

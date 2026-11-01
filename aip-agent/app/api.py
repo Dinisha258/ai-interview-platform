@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from app.schemas import AgentChatReq, AgentChatResp
-from app.services.llm_service import generate_interview_reply
+from app.schemas import AgentChatReq, AgentChatResp, AgentReportReq, AgentReportResp
+from app.services.llm_service import generate_interview_reply, generate_interview_report
 from app.services.asr_service import transcribe_audio
 from app.services.tts_service import synthesize_text  # 引入我们刚写的 TTS 服务
 
@@ -27,3 +27,9 @@ async def agent_chat(req: AgentChatReq):
         result.ttsAudioBase64 = audio_b64
 
     return result
+
+
+@router.post("/report", response_model=AgentReportResp)
+async def agent_report(req: AgentReportReq):
+    """面试结束后,Java 端调用此接口生成整场面试的评估报告"""
+    return await generate_interview_report(req)

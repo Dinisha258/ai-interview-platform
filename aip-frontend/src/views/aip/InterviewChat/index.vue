@@ -26,8 +26,8 @@
         <span class="chat-title">
           <i class="el-icon-headset"></i> AI 面试官
         </span>
-        <el-button type="danger" size="small" plain icon="el-icon-switch-button" @click="handleEndInterview" :disabled="!isSessionActive">
-          结束面试
+        <el-button type="danger" size="small" plain icon="el-icon-switch-button" @click="handleEndInterview" :disabled="!isSessionActive" :loading="endLoading">
+          {{ endLoading ? '报告生成中...' : '结束面试' }}
         </el-button>
       </div>
 
@@ -94,15 +94,21 @@
         <el-button type="primary" :loading="newLoading" @click="handleStartInterview">开始面试</el-button>
       </div>
     </el-dialog>
+
+    <!-- 面试报告弹窗(结束后自动弹出) -->
+    <ReportDetail :visible.sync="showReportDialog" :report="reportData" />
   </div>
 </template>
 
 <script>
 import { startInterview, interviewChat, endInterview, listMySessions, getDialogues, uploadAudio } from "@/api/aip/interview";
+import { getReportBySessionId } from "@/api/aip/report";
 import { listPosition } from "@/api/aip/position";
+import ReportDetail from "@/components/ReportDetail/index.vue";
 
 export default {
   name: "InterviewChat",
+  components: { ReportDetail },
   data() {
     return {
       activeSessionId: null,
@@ -111,6 +117,10 @@ export default {
       roundNum: 0,
       sessionList: [],
       messageList: [],
+      // 结束面试/报告生成
+      endLoading: false,
+      showReportDialog: false,
+      reportData: null,
       // 新建面试
       showNewDialog: false,
       newLoading: false,
@@ -416,14 +426,37 @@ export default {
       }).catch(() => {});
     },
 
-    // 调用结束接口
+    // 调用结束接口(后端会同步生成报告,耗时较长)
     async doEndInterview() {
+      if (this.endLoading) return;
+      this.endLoading = true;
       try {
         await endInterview(this.activeSessionId);
         this.$message.success("面试已结束");
         this.loadSessions();
+        // 拉取刚生成的报告并弹窗展示
+        this.fetchAndShowReport();
       } catch (e) {
         console.error("结束面试失败", e);
+        this.$message.error("结束面试失败，请重试");
+      } finally {
+        this.endLoading = false;
+      }
+    },
+
+    // 获取报告(生成失败时给出友好提示,不影响面试已结束的状态)
+    async fetchAndShowReport() {
+      try {
+        const res = await getReportBySessionId(this.activeSessionId);
+        if (res.data) {
+          this.reportData = res.data;
+          this.showReportDialog = true;
+        } else {
+          this.$message.warning("面试已结束，但报告生成失败，稍后可在报告管理中查看");
+        }
+      } catch (e) {
+        console.warn("获取报告失败", e);
+        this.$message.warning("面试已结束，但报告生成失败，稍后可在报告管理中查看");
       }
     },
 

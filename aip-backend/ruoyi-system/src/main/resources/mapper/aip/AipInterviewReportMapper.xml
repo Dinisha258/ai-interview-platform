@@ -3,7 +3,7 @@
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.aip.mapper.AipInterviewReportMapper">
-    
+
     <resultMap type="AipInterviewReport" id="AipInterviewReportResult">
         <result property="id"    column="id"    />
         <result property="sessionId"    column="session_id"    />
@@ -12,26 +12,41 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="weaknesses"    column="weaknesses"    />
         <result property="learningAdvice"    column="learning_advice"    />
         <result property="createTime"    column="create_time"    />
+        <!-- 联表字段:来自会话表和岗位表,列表页展示用 -->
+        <result property="userId"    column="user_id"    />
+        <result property="targetLevel"    column="target_level"    />
+        <result property="totalScore"    column="total_score"    />
+        <result property="endTime"    column="end_time"    />
+        <result property="positionName"    column="position_name"    />
     </resultMap>
 
     <sql id="selectAipInterviewReportVo">
-        select id, session_id, radar_dimensions, highlights, weaknesses, learning_advice, create_time from aip_interview_report
+        select r.id, r.session_id, r.radar_dimensions, r.highlights, r.weaknesses, r.learning_advice, r.create_time,
+               s.user_id, s.target_level, s.total_score, s.end_time, p.name as position_name
+        from aip_interview_report r
+        left join aip_interview_session s on r.session_id = s.id
+        left join aip_position p on s.position_id = p.id
     </sql>
 
     <select id="selectAipInterviewReportList" parameterType="AipInterviewReport" resultMap="AipInterviewReportResult">
         <include refid="selectAipInterviewReportVo"/>
-        <where>  
-            <if test="sessionId != null "> and session_id = #{sessionId}</if>
-            <if test="radarDimensions != null  and radarDimensions != ''"> and radar_dimensions = #{radarDimensions}</if>
-            <if test="highlights != null  and highlights != ''"> and highlights = #{highlights}</if>
-            <if test="weaknesses != null  and weaknesses != ''"> and weaknesses = #{weaknesses}</if>
-            <if test="learningAdvice != null  and learningAdvice != ''"> and learning_advice = #{learningAdvice}</if>
+        <where>
+            <if test="sessionId != null "> and r.session_id = #{sessionId}</if>
+            <if test="positionName != null  and positionName != ''"> and p.name like concat('%', #{positionName}, '%')</if>
         </where>
+        order by r.create_time desc
     </select>
-    
+
     <select id="selectAipInterviewReportById" parameterType="Long" resultMap="AipInterviewReportResult">
         <include refid="selectAipInterviewReportVo"/>
-        where id = #{id}
+        where r.id = #{id}
+    </select>
+
+    <!-- 根据面试场次ID查报告(面试结束后前端拉取展示用) -->
+    <select id="selectAipInterviewReportBySessionId" parameterType="Long" resultMap="AipInterviewReportResult">
+        <include refid="selectAipInterviewReportVo"/>
+        where r.session_id = #{sessionId}
+        limit 1
     </select>
 
     <insert id="insertAipInterviewReport" parameterType="AipInterviewReport" useGeneratedKeys="true" keyProperty="id">
@@ -72,7 +87,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteAipInterviewReportByIds" parameterType="String">
-        delete from aip_interview_report where id in 
+        delete from aip_interview_report where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

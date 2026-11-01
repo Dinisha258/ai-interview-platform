@@ -17,6 +17,14 @@ export function getReport(id) {
   })
 }
 
+// 根据面试场次查询报告(面试结束后前端拉取展示用)
+export function getReportBySessionId(sessionId) {
+  return request({
+    url: '/aip/manage/report/session/' + sessionId,
+    method: 'get'
+  })
+}
+
 // 新增综合评估报告
 export function addReport(data) {
   return request({

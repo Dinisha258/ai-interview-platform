@@ -21,11 +21,19 @@ public interface AipInterviewReportMapper
 
     /**
      * 查询综合评估报告列表
-     * 
+     *
      * @param aipInterviewReport 综合评估报告
      * @return 综合评估报告集合
      */
     public List<AipInterviewReport> selectAipInterviewReportList(AipInterviewReport aipInterviewReport);
+
+    /**
+     * 根据面试场次ID查询报告(面试结束后前端拉取展示用)
+     *
+     * @param sessionId 面试场次ID
+     * @return 综合评估报告
+     */
+    public AipInterviewReport selectAipInterviewReportBySessionId(Long sessionId);
 
     /**
      * 新增综合评估报告

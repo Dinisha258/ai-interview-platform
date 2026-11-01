@@ -46,6 +46,15 @@ public class AipInterviewReportController extends BaseController
     }
 
     /**
+     * 根据面试场次查询报告(面试结束后前端拉取展示用)
+     */
+    @GetMapping("/session/{sessionId}")
+    public AjaxResult getBySessionId(@PathVariable("sessionId") Long sessionId)
+    {
+        return success(aipInterviewReportService.selectAipInterviewReportBySessionId(sessionId));
+    }
+
+    /**
      * 导出综合评估报告列表
      */
     @Log(title = "综合评估报告", businessType = BusinessType.EXPORT)

@@ -19,11 +19,12 @@ export function interviewChat(data) {
   })
 }
 
-// 结束面试
+// 结束面试(后端会同步调大模型生成报告,耗时较长,超时放宽到120秒)
 export function endInterview(sessionId) {
   return request({
     url: '/api/control/end/' + sessionId,
-    method: 'post'
+    method: 'post',
+    timeout: 120000
   })
 }
 
