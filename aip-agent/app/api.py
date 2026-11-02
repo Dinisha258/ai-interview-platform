@@ -9,10 +9,14 @@ router = APIRouter()
 @router.post("/chat", response_model=AgentChatResp)
 async def agent_chat(req: AgentChatReq):
 
-    # 语音识别 (ASR)
+    # 语音识别 (ASR) —— 失败不致命,降级为文字提示
     if req.audioUrl:
-        recognized_text = await transcribe_audio(req.audioUrl)
-        req.currentInput = recognized_text if recognized_text else "（候选人提交了一段语音，但无法听清）"
+        try:
+            recognized_text = await transcribe_audio(req.audioUrl)
+            req.currentInput = recognized_text if recognized_text else "（候选人提交了一段语音，但无法听清）"
+        except Exception as e:
+            print(f"[ASR Error]: {e}")
+            req.currentInput = "（语音识别暂不可用，请改用文字输入）"
 
     if not req.currentInput:
         req.currentInput = "你好"
@@ -20,11 +24,14 @@ async def agent_chat(req: AgentChatReq):
     # 大模型思考 (LLM)
     result: AgentChatResp = await generate_interview_reply(req)
 
-    # 文字转语音 (TTS)
+    # 文字转语音 (TTS) —— 失败不致命,没有配音也返回文字
     if result.aiReply:
-        # 给模型生成的文本配音
-        audio_b64 = await synthesize_text(result.aiReply)
-        result.ttsAudioBase64 = audio_b64
+        try:
+            audio_b64 = await synthesize_text(result.aiReply)
+            result.ttsAudioBase64 = audio_b64
+        except Exception as e:
+            print(f"[TTS Error]: {e}")
+            result.ttsAudioBase64 = ""
 
     return result
 

@@ -7,11 +7,11 @@ from app.prompts import INTERVIEWER_SYSTEM_PROMPT, REPORT_SYSTEM_PROMPT
 from app.schemas import AgentChatReq, AgentChatResp, AgentReportReq, AgentReportResp
 
 # 初始化 DeepSeek 异步客户端
+# 默认直连(本机测试直连可达);如需走代理,在 .env 里配置 DEEPSEEK_PROXY=http://127.0.0.1:7890
 client = AsyncOpenAI(
     api_key=os.getenv("DEEPSEEK_API_KEY"),
     base_url="https://api.deepseek.com",
-    # 如果开了代理软件（如 Clash），把下面的注释打开，确认代理端口是 7890
-    http_client=httpx.AsyncClient(proxy="http://127.0.0.1:7890")
+    http_client=httpx.AsyncClient(proxy=os.getenv("DEEPSEEK_PROXY") or None)
 )
 
 LEVEL_MAP = {1: "实习生", 2: "初级", 3: "中级", 4: "高级"}

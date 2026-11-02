@@ -74,7 +74,7 @@
     </div>
 
     <!-- 新建面试对话框 -->
-    <el-dialog title="开始新面试" :visible.sync="showNewDialog" width="420px" :close-on-click-modal="false" :close-on-press-escape="false" :show-close="false">
+    <el-dialog title="开始新面试" :visible.sync="showNewDialog" width="420px" :close-on-click-modal="false">
       <el-form :model="newForm" label-width="80px">
         <el-form-item label="面试岗位">
           <el-select v-model="newForm.positionId" placeholder="请选择岗位" style="width: 100%">
@@ -91,6 +91,7 @@
         </el-form-item>
       </el-form>
       <div slot="footer">
+        <el-button @click="showNewDialog = false">取消</el-button>
         <el-button type="primary" :loading="newLoading" @click="handleStartInterview">开始面试</el-button>
       </div>
     </el-dialog>

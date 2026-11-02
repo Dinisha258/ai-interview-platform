@@ -65,12 +65,12 @@ spring:
     restart:
       # 热部署开关
       enabled: true
-  # redis 配置
+  # redis 配置(本地Redis;原远程 122.246.0.213:33057 已不可达)
   redis:
     # 地址
-    host: 122.246.0.213
+    host: 127.0.0.1
     # 端口，默认为6379
-    port: 33057
+    port: 6379
     # 数据库索引
     database: 0
     # 密码
@@ -144,9 +144,9 @@ aip:
     # 面试上下文 Redis Key 前缀
     ctx-prefix: "aip:interview:ctx:"
 
-# 自定义 MinIO 配置
+# 自定义 MinIO 配置(本地MinIO;原远程 frp-fan.com:15064 已不可达)
 minio:
-  endpoint: http://frp-fan.com:15064 # MinIO API 地址
+  endpoint: http://127.0.0.1:9000 # MinIO API 地址
   accessKey: minioadmin           # 账号
   secretKey: minioadmin           # 密码
   bucketName: aip-files           # 桶名称
